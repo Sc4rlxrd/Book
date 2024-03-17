@@ -29,4 +29,9 @@ public class ClientController {
     public List<Client> get(){
         return clientService.get() ;
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Client> update(@PathVariable Long id , @RequestBody ClientDTO clientDTO){
+        return clientService.updateUser(clientDTO, id);
+    }
 }
