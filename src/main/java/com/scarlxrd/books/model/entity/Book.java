@@ -1,5 +1,6 @@
 package com.scarlxrd.books.model.entity;
 
+import com.scarlxrd.books.model.DTO.BookDTO;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,28 +12,36 @@ public class Book {
     private String name;
     private String description;
     private String gender;
-    private Integer year;
+    private String year;
+    @ManyToOne
+    private Client client;
 
     public Book() {
     }
 
-    public Book(Long id, String name, String description, String gender, Integer year) {
+    public Book(Long id, String name, String description, String gender, String year, Client client) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.gender = gender;
         this.year = year;
+        this.client = client;
+    }
+    public Book(BookDTO bookDTO) {
+        this.name = bookDTO.name();
+        this.description = bookDTO.description();
+        this.gender =bookDTO.gender();
+        this.year = bookDTO.year();
+        this.id = bookDTO.id();
+        this.client = bookDTO.client();
     }
 
-    @Override
-    public String toString() {
-        return "Book{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", gender='" + gender + '\'' +
-                ", year=" + year +
-                '}';
+    public Client getClient() {
+        return client;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     public Long getId() {
@@ -67,11 +76,11 @@ public class Book {
         this.gender = gender;
     }
 
-    public Integer getYear() {
+    public String getYear() {
         return year;
     }
 
-    public void setYear(Integer year) {
+    public void setYear(String year) {
         this.year = year;
     }
 }
