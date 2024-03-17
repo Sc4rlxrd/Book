@@ -20,7 +20,6 @@ public class Client {
     private List<Book> books;
 
 
-
     public List<Book> getBooks() {
         return books;
     }
