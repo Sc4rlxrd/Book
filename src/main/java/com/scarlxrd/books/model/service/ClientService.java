@@ -1,44 +1,63 @@
 package com.scarlxrd.books.model.service;
-import com.scarlxrd.books.model.DTO.ClientDTO;
+import com.scarlxrd.books.model.DTO.BookRequestDTO;
+
+import com.scarlxrd.books.model.DTO.ClientRequestDTO;
+import com.scarlxrd.books.model.DTO.ClientResponseDTO;
+import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
+import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.repository.ClientRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+
+import java.util.stream.Collectors;
 
 @Service
 public class ClientService {
-    private final ClientRepository repository;
-    public ClientService(ClientRepository repository) {
-        this.repository = repository;
+    private final ClientRepository clientRepository;
+
+    @Autowired
+    public ClientService(ClientRepository clientRepository) {
+        this.clientRepository = clientRepository;
     }
 
-    public List<Client> get(){
-        return repository.findAll();
-    }
+    @Transactional // Garante que a operação seja atômica no banco de dados
+    public ClientResponseDTO createClient(ClientRequestDTO requestDTO) {
+        // 1. Validação do CPF (ocorre no construtor de Cpf)
+        Cpf cpf = new Cpf(requestDTO.getCpfNumber());
 
-    public Client createUser(ClientDTO clientDTO){
-        Client newUser = new Client(clientDTO);
-        return repository.save(newUser);
-    }
+        // 2. Cria a entidade Client
+        Client client = new Client(null, requestDTO.getName(), requestDTO.getLastName(), cpf);
 
-    public ResponseEntity<Client> updateUser(ClientDTO clientDTO , Long id){
-        Optional<Client> oldPerson = repository.findById(id);
-        if(oldPerson.isPresent()){
-            Client person = oldPerson.get();
-            person.setName(clientDTO.name());
-            person.setPassword(clientDTO.password());
-            person.setAge(clientDTO.age());
-            person.setBooks(clientDTO.books());
-            repository.save(person);
-            return  new ResponseEntity<>(HttpStatus.OK);
-        }else{
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
+        // 3. Adiciona os livros ao cliente
+        if (requestDTO.getBooks() != null && !requestDTO.getBooks().isEmpty()) {
+            for (BookRequestDTO bookDTO : requestDTO.getBooks()) {
+                Book book = new Book(bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), client);
+                client.addBook(book); // Usa o mét0do auxiliar para manter a bidirecionalidade
+            }
         }
+
+        // 4. Salva o cliente (e os livros em cascata devido a CascadeType.ALL)
+        Client savedClient = clientRepository.save(client);
+
+        // 5. Converte a entidade salva para o DTO de resposta
+        return new ClientResponseDTO(savedClient);
     }
+
+    @Transactional
+    public List<ClientResponseDTO> getAllClients() {
+        // Busca todos os clientes. FetchType.LAZY para books significa que os livros
+        // só serão carregados quando acessados. Para carregar tudo de uma vez,
+        // pode ser necessário um @EntityGraph ou join fetch no repositório.
+        // No entanto, para o DTO, o acesso a getBooks() já acionará o carregamento.
+        return clientRepository.findAll().stream()
+                .map(ClientResponseDTO::new) // Converte cada Client para ClientResponseDTO
+                .collect(Collectors.toList());
+    }
+
 
 }
