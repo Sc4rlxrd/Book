@@ -1,39 +1,68 @@
 package com.scarlxrd.books.model.entity;
 
-import com.scarlxrd.books.model.DTO.BookDTO;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.scarlxrd.books.model.entity.Client;
 import jakarta.persistence.*;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "books")
 public class Book {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String name;
-    private String description;
-    private String gender;
-    private String year;
-    @ManyToOne
-    private Client client;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    private String title;
+    private String author;
+    private String isbn; // International Standard Book Number
 
-    public Book() {
-    }
+    @ManyToOne // Muitos livros para um cliente
+    @JoinColumn(name = "client_id", nullable = false) // Coluna de chave estrangeira na tabela 'books'
+    @JsonBackReference // Usado para evitar ‘loop’ infinito na serialização JSON
+    private Client client; // O cliente ao qual este livro pertence
 
-    public Book(Long id, String name, String description, String gender, String year, Client client) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.gender = gender;
-        this.year = year;
+    // Construtor padrão (sem argumentos) é OBRIGATÓRIO para entidades JPA
+    public Book() {}
+
+    // Construtor para facilitar a criação de objetos Book
+    public Book(String title, String author, String isbn, Client client) {
+        this.title = title;
+        this.author = author;
+        this.isbn = isbn;
         this.client = client;
     }
-    public Book(BookDTO bookDTO) {
-        this.name = bookDTO.name();
-        this.description = bookDTO.description();
-        this.gender =bookDTO.gender();
-        this.year = bookDTO.year();
-        this.id = bookDTO.id();
-        this.client = bookDTO.client();
+
+    // Getters e Setters
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
     }
 
     public Client getClient() {
@@ -44,43 +73,14 @@ public class Book {
         this.client = client;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getGender() {
-        return gender;
-    }
-
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
-
-    public String getYear() {
-        return year;
-    }
-
-    public void setYear(String year) {
-        this.year = year;
+    @Override
+    public String toString() {
+        return "Book{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", author='" + author + '\'' +
+                ", isbn='" + isbn + '\'' +
+                // Evita referenciar o cliente diretamente para não criar loop no toString
+                '}';
     }
 }
