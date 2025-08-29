@@ -1,4 +1,5 @@
 package com.scarlxrd.books.model.service;
+
 import com.scarlxrd.books.model.DTO.BookRequestDTO;
 
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
@@ -32,7 +33,6 @@ public class ClientService {
 
         // 2. Cria a entidade Client
         Client client = new Client(null, requestDTO.getName(), requestDTO.getLastName(), cpf);
-
         // 3. Adiciona os livros ao cliente
         if (requestDTO.getBooks() != null && !requestDTO.getBooks().isEmpty()) {
             for (BookRequestDTO bookDTO : requestDTO.getBooks()) {
@@ -54,8 +54,7 @@ public class ClientService {
         // só serão carregados quando acessados. Para carregar tudo de uma vez,
         // pode ser necessário um @EntityGraph ou join fetch no repositório.
         // No entanto, para o DTO, o acesso a getBooks() já acionará o carregamento.
-        return clientRepository.findAll().stream()
-                .map(ClientResponseDTO::new) // Converte cada Client para ClientResponseDTO
+        return clientRepository.findAll().stream().map(ClientResponseDTO::new) // Converte cada Client para ClientResponseDTO
                 .collect(Collectors.toList());
     }
 
