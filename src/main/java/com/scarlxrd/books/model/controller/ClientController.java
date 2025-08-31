@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.HTML;
 import java.util.List;
 
 @RestController
@@ -44,5 +45,14 @@ public class ClientController {
     public List<ClientResponseDTO> get() {
         // Chama o serviço para obter todos os clientes (já em formato DTO)
         return clientService.getAllClients();
+    }
+    @DeleteMapping("/{cpf}")
+    public ResponseEntity<Void> delete(@PathVariable String cpf){
+        boolean deleted = clientService.deleteByCpf(cpf);
+        if (deleted){
+            return ResponseEntity.ok().build();
+        }
+
+         return ResponseEntity.notFound().build();
     }
 }

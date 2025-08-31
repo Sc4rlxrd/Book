@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
-public class Cpf implements Serializable {
+public final class Cpf implements Serializable {
 
     @Column(name = "cpf_number", unique = true, length = 11, nullable = false)
     private String number;

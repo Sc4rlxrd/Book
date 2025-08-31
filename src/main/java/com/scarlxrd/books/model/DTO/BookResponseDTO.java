@@ -10,6 +10,9 @@ public class BookResponseDTO {
     private String author;
     private String isbn;
 
+    public BookResponseDTO() {
+    }
+
     public BookResponseDTO(Book book) {
         this.id = book.getId();
         this.title = book.getTitle();

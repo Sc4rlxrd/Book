@@ -27,11 +27,12 @@ class ClientServiceTest {
     private ClientRepository clientRepository;
     @Mock
     private ClientService clientService;
-
+    @Mock
+    private ClientProducer clientProducer;
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        clientService = new ClientService(clientRepository);
+        clientService = new ClientService(clientRepository,clientProducer);
     }
 
     @Test
