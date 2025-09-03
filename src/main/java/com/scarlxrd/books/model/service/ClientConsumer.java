@@ -1,18 +1,57 @@
 package com.scarlxrd.books.model.service;
 
-import com.scarlxrd.books.model.DTO.ClientResponseDTO;
+import com.rabbitmq.client.Channel;
+import com.scarlxrd.books.model.DTO.ClientRequestDTO;
+
 import com.scarlxrd.books.model.config.RabbitMQConfig;
+import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.scarlxrd.books.model.entity.Cpf;
+import com.scarlxrd.books.model.repository.ClientRepository;
+
+
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+
+
+import java.io.IOException;
+import java.util.List;
 
 @Component
 public class ClientConsumer {
+    private  final ClientRepository clientRepository;
+
+    public ClientConsumer(ClientRepository clientRepository) {
+        this.clientRepository = clientRepository;
+    }
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
-    public void consumer(Client client){
-        System.out.println("Recebido do RabbitMq: " + client);
+    public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message, Channel channel) throws IOException {
+        try {
+            // Converte DTO para entidade
+            Client client = new Client();
+            client.setName(clientRequestDTO.getName());
+            client.setLastName(clientRequestDTO.getLastName());
+            client.setCpf(new Cpf(clientRequestDTO.getCpfNumber()));
+
+            if (clientRequestDTO.getBooks() != null) {
+                List<Book> books = clientRequestDTO.getBooks().stream().map(bookDto -> {
+                    Book book = new Book();
+                    book.setTitle(bookDto.getTitle());
+                    book.setAuthor(bookDto.getAuthor());
+                    book.setIsbn(bookDto.getIsbn());
+                    book.setClient(client);
+                    return book;
+                }).toList();
+                client.setBooks(books);
+            }
+
+            clientRepository.save(client);
+
+
+            System.out.println("Cliente salvo no consumer: " + client.getName() + " " + client.getLastName());
+        } catch (Exception e) {
+            throw e;
+        }
     }
 }

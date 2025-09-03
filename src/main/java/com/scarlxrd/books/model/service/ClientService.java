@@ -46,7 +46,7 @@ public class ClientService {
         // 4. Salva o cliente (e os livros em cascata devido a CascadeType.ALL)
         Client savedClient = clientRepository.save(client);
         ClientResponseDTO response = new ClientResponseDTO(savedClient);
-        clientProducer.sendClientCreated(response);
+        clientProducer.sendClient(requestDTO);
         return response;
 
 
@@ -64,11 +64,13 @@ public class ClientService {
 
     @Transactional
     public boolean deleteByCpf (String cpfNumber){
-        Cpf cpf= new Cpf(cpfNumber);
-       return clientRepository.findByCpf(cpf).map(client -> {clientRepository.delete(client);
-           ClientResponseDTO response = new ClientResponseDTO(client);
-           clientProducer.sendClientDeleted(response);
-           System.out.println("Cliente deletado e enviado para o RabbitMq: " + cpfNumber); return true;}).orElse(false);
+        Cpf cpf = new Cpf(cpfNumber);
+        return clientRepository.findByCpf(cpf)
+                .map(client -> {
+                    clientRepository.delete(client);
+                    return true;
+                })
+                .orElse(false);
     }
 
 }

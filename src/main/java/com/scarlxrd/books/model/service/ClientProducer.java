@@ -1,5 +1,6 @@
 package com.scarlxrd.books.model.service;
 
+import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
 import com.scarlxrd.books.model.config.RabbitMQConfig;
 
@@ -16,14 +17,12 @@ public class ClientProducer {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void sendClientCreated(ClientResponseDTO client) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY, client);
-        System.out.println("Cliente criado:  " + client.getName() + " com esse livros: " + client.getBooks().size());
+    public void sendClient(ClientRequestDTO clientRequestDTO) {
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE,
+                RabbitMQConfig.ROUTING_KEY,
+                clientRequestDTO
+        );
+        System.out.println("Mensagem enviada para RabbitMQ: " + clientRequestDTO.getName());
     }
-
-    public void sendClientDeleted(ClientResponseDTO client) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY, client);
-        System.out.println("Cliente deletado:  " + client);
-    }
-
 }
