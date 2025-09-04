@@ -1,8 +1,6 @@
-package com.scarlxrd.books.model.service;
+package com.scarlxrd.books.model.config;
 
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
-import com.scarlxrd.books.model.DTO.ClientResponseDTO;
-import com.scarlxrd.books.model.config.RabbitMQConfig;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -21,7 +19,11 @@ public class ClientProducer {
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE,
                 RabbitMQConfig.ROUTING_KEY,
-                clientRequestDTO
+                clientRequestDTO,
+                message -> {
+                    message.getMessageProperties().setHeader("x-retry-count", 0);
+                    return message;
+                }
         );
         System.out.println("Mensagem enviada para RabbitMQ: " + clientRequestDTO.getName());
     }

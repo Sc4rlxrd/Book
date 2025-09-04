@@ -1,15 +1,16 @@
-package com.scarlxrd.books.model.service;
+package com.scarlxrd.books.model.config;
 
 import com.rabbitmq.client.Channel;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 
-import com.scarlxrd.books.model.config.RabbitMQConfig;
 import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -20,14 +21,25 @@ import java.util.List;
 
 @Component
 public class ClientConsumer {
-    private  final ClientRepository clientRepository;
-
+    private final ClientRepository clientRepository;
+    private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
+    private final int maxRetries = 3;
     public ClientConsumer(ClientRepository clientRepository) {
         this.clientRepository = clientRepository;
     }
-    @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
+
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME, ackMode = "MANUAL")
     public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message, Channel channel) throws IOException {
+        long deliveryTag = message.getMessageProperties().getDeliveryTag();
+        int retryCount = message.getMessageProperties().getHeader("x-retry-count") != null ? (int) message.getMessageProperties().getHeader("x-retry-count") : 0;
         try {
+
+            Cpf cpf = new Cpf(clientRequestDTO.getCpfNumber());
+            if (clientRepository.existsByCpf(cpf)) {
+                log.warn("Cliente já existe: {}", cpf);
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
             // Converte DTO para entidade
             Client client = new Client();
             client.setName(clientRequestDTO.getName());
@@ -47,11 +59,19 @@ public class ClientConsumer {
             }
 
             clientRepository.save(client);
-
-
-            System.out.println("Cliente salvo no consumer: " + client.getName() + " " + client.getLastName());
+            channel.basicAck(deliveryTag, false);
+            log.info("Cliente salvo no consumer: {} {}", client.getName(), client.getLastName());
         } catch (Exception e) {
-            throw e;
+            retryCount++;
+            if (retryCount> maxRetries){
+                log.error("Falha persistente ao processar mensagem. Descartando. {}", e.getMessage(), e);
+                channel.basicAck(deliveryTag, false); // descarta mensagem
+            }else {
+                log.warn("Erro ao processar mensagem, retry {}/{}: {}", retryCount, maxRetries, e.getMessage());
+                // Reenvia a mensagem com o contador de retries
+                message.getMessageProperties().setHeader("x-retry-count", retryCount);
+                channel.basicNack(deliveryTag, false, true); // requeue
+            }
         }
     }
 }
