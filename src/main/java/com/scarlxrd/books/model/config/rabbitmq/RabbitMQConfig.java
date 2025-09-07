@@ -1,4 +1,4 @@
-package com.scarlxrd.books.model.config;
+package com.scarlxrd.books.model.config.rabbitmq;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

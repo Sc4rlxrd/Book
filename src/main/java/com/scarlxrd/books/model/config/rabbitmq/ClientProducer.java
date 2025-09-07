@@ -1,4 +1,4 @@
-package com.scarlxrd.books.model.config;
+package com.scarlxrd.books.model.config.rabbitmq;
 
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 
