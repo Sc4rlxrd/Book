@@ -4,7 +4,7 @@ import com.scarlxrd.books.model.DTO.BookRequestDTO;
 
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
-import com.scarlxrd.books.model.config.ClientProducer;
+import com.scarlxrd.books.model.config.rabbitmq.ClientProducer;
 import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;

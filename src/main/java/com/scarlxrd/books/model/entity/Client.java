@@ -15,7 +15,6 @@ public class Client {
     private UUID id;
     private String name;
     private String lastName;
-
     @Embedded
     private Cpf cpf;
 
@@ -33,6 +32,7 @@ public class Client {
         this.lastName = lastName;
         this.cpf = cpf;
     }
+
 
     // Getters e Setters
     public UUID getId() {
@@ -74,6 +74,7 @@ public class Client {
     public void setBooks(List<Book> books) {
         this.books = books;
     }
+
 
     // Mét0do auxiliar para adicionar um livro e manter a consistência da relação bidirecional
     public void addBook(Book book) {
