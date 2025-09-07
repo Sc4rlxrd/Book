@@ -4,6 +4,8 @@ import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -44,19 +46,39 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    // 409 - Cliente já existe
+    @ExceptionHandler(ClientAlreadyExistsException.class)
+    public ProblemDetail handleClientAlreadyExists(ClientAlreadyExistsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setTitle("Client already exists");
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
+    // 401 - Credenciais inválidas
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problem.setTitle("Unauthorized");
+        problem.setDetail("Email ou senha inválidos");
+        return problem;
+    }
+
+    // 403 - Acesso negado
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problem.setTitle("Forbidden");
+        problem.setDetail("Você não tem permissão para acessar este recurso");
+        return problem;
+    }
+
     // 500 - Erros não tratados
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problem.setTitle("Internal server error");
         problem.setDetail("Ocorreu um erro inesperado");
-        return problem;
-    }
-    @ExceptionHandler(ClientAlreadyExistsException.class)
-    public ProblemDetail handleClientAlreadyExists(ClientAlreadyExistsException ex) {
-        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
-        problem.setTitle("Client already exists");
-        problem.setDetail(ex.getMessage());
         return problem;
     }
 }
