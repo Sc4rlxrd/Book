@@ -6,6 +6,7 @@ import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
+import com.scarlxrd.books.model.entity.CpfValidator;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
 
@@ -31,10 +32,16 @@ public class ClientConsumer {
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME, ackMode = "MANUAL")
     public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message, Channel channel) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
-        int retryCount = message.getMessageProperties().getHeader("x-retry-count") != null ? (int) message.getMessageProperties().getHeader("x-retry-count") : 0;
+        Object header = message.getMessageProperties().getHeaders().get("x-retry-count");
+        int retryCount = header != null ? Integer.parseInt(header.toString()) : 0;
         try {
 
             Cpf cpf = new Cpf(clientRequestDTO.getCpfNumber());
+            if (!CpfValidator.isValidCPF(String.valueOf(cpf))) {
+                log.warn("CPF inválido, descartando mensagem: {}", clientRequestDTO.getCpfNumber());
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
             if (clientRepository.existsByCpf(cpf)) {
                 log.warn("Cliente já existe: {}", cpf);
                 channel.basicAck(deliveryTag, false);
@@ -61,7 +68,11 @@ public class ClientConsumer {
             clientRepository.save(client);
             channel.basicAck(deliveryTag, false);
             log.info("Cliente salvo no consumer: {} {}", client.getName(), client.getLastName());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            log.warn("CPF inválido.: {}", e.getMessage());
+            channel.basicAck(deliveryTag, false);
+        }
+        catch (Exception e) {
             retryCount++;
             if (retryCount> maxRetries){
                 log.error("Falha persistente ao processar mensagem. Descartando. {}", e.getMessage(), e);
