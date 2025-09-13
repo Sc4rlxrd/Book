@@ -10,5 +10,5 @@ public record RegisterDTO(
         String email,
         @NotBlank
         String password,
-        Role role) {
+        Set<Role> roles) {
 }
