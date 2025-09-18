@@ -23,6 +23,14 @@ public class ClientResponseDTO {
                 .collect(Collectors.toList());
     }
 
+    public ClientResponseDTO(UUID id, String name, String lastName, String cpf, List<BookResponseDTO> books) {
+        this.id = id;
+        this.name = name;
+        this.lastName = lastName;
+        this.cpf = cpf;
+        this.books = books;
+    }
+
     // Getters e Setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
