@@ -1,6 +1,5 @@
 package com.scarlxrd.books.model.config.rabbitmq;
 
-import com.rabbitmq.client.Channel;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 
 import com.scarlxrd.books.model.entity.Book;
@@ -14,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 
@@ -22,29 +22,29 @@ import java.util.List;
 
 @Component
 public class ClientConsumer {
+
     private final ClientRepository clientRepository;
+    private final RabbitTemplate rabbitTemplate;
+
     private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
-    private final int maxRetries = 3;
-    public ClientConsumer(ClientRepository clientRepository) {
+
+    private final int MAX_RETRIES = 3;
+
+    public ClientConsumer(ClientRepository clientRepository, RabbitTemplate rabbitTemplate) {
         this.clientRepository = clientRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME, ackMode = "MANUAL")
-    public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message, Channel channel) throws IOException {
-        long deliveryTag = message.getMessageProperties().getDeliveryTag();
-        Object header = message.getMessageProperties().getHeaders().get("x-retry-count");
-        int retryCount = header != null ? Integer.parseInt(header.toString()) : 0;
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
+    public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message){
         try {
-
             Cpf cpf = new Cpf(clientRequestDTO.getCpfNumber());
             if (!CpfValidator.isValidCPF(String.valueOf(cpf))) {
                 log.warn("CPF inválido, descartando mensagem: {}", clientRequestDTO.getCpfNumber());
-                channel.basicAck(deliveryTag, false);
                 return;
             }
             if (clientRepository.existsByCpf(cpf)) {
                 log.warn("Cliente já existe: {}", cpf);
-                channel.basicAck(deliveryTag, false);
                 return;
             }
             // Converte DTO para entidade
@@ -66,22 +66,31 @@ public class ClientConsumer {
             }
 
             clientRepository.save(client);
-            channel.basicAck(deliveryTag, false);
             log.info("Cliente salvo no consumer: {} {}", client.getName(), client.getLastName());
         } catch (IllegalArgumentException e) {
             log.warn("CPF inválido.: {}", e.getMessage());
-            channel.basicAck(deliveryTag, false);
         }
         catch (Exception e) {
-            retryCount++;
-            if (retryCount> maxRetries){
-                log.error("Falha persistente ao processar mensagem. Descartando. {}", e.getMessage(), e);
-                channel.basicAck(deliveryTag, false); // descarta mensagem
+            Integer retryCount = (Integer) message.getMessageProperties().getHeaders().getOrDefault("x-retry-count",0);
+            if (retryCount < MAX_RETRIES){
+                int nextRetry = retryCount + 1;
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.EXCHANGE,
+                        RabbitMQConfig.RETRY_QUEUE_NAME,
+                        clientRequestDTO,
+                        m ->{
+                            m.getMessageProperties().setHeader("x-retry-count", nextRetry);
+                            return m;
+                        }
+                );
+                log.warn("Erro ao processar mensagem, retry {}/{}. Reenviando para retry queue.", nextRetry, MAX_RETRIES, e);
             }else {
-                log.warn("Erro ao processar mensagem, retry {}/{}: {}", retryCount, maxRetries, e.getMessage());
-                // Reenvia a mensagem com o contador de retries
-                message.getMessageProperties().setHeader("x-retry-count", retryCount);
-                channel.basicNack(deliveryTag, false, true); // requeue
+               rabbitTemplate.convertAndSend(
+                       RabbitMQConfig.DLX_EXCHANGE,
+                       RabbitMQConfig.DLQ_ROUTING_KEY,
+                       clientRequestDTO
+               );
+               log.error("Mensagem movida para DLQ após {} tentativas. Erro: {}", MAX_RETRIES, e.getMessage(), e);
             }
         }
     }
