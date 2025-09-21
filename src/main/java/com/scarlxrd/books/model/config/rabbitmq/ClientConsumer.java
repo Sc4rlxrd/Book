@@ -1,5 +1,6 @@
 package com.scarlxrd.books.model.config.rabbitmq;
 
+import com.scarlxrd.books.model.DTO.BookRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 
 import com.scarlxrd.books.model.entity.Book;
@@ -9,6 +10,8 @@ import com.scarlxrd.books.model.entity.CpfValidator;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
@@ -17,81 +20,125 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 
-import java.io.IOException;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ClientConsumer {
 
     private final ClientRepository clientRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final Validator validator;
 
     private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
 
     private final int MAX_RETRIES = 3;
 
-    public ClientConsumer(ClientRepository clientRepository, RabbitTemplate rabbitTemplate) {
+    public ClientConsumer(ClientRepository clientRepository,
+                          RabbitTemplate rabbitTemplate,
+                          Validator validator) {
         this.clientRepository = clientRepository;
         this.rabbitTemplate = rabbitTemplate;
+        this.validator = validator;
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
-    public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message){
+    public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message) {
+
+        Set<ConstraintViolation<ClientRequestDTO>> violations = validator.validate(clientRequestDTO);
+        if (!violations.isEmpty()) {
+            String errorMsg = violations.stream()
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .collect(Collectors.joining(", "));
+            log.warn("Validação falhou para ClientRequestDTO: {}", errorMsg);
+            sendToDLQ(clientRequestDTO, message, errorMsg);
+            return;
+        }
+
+
+       String cpfNumber = clientRequestDTO.getCpfNumber();
+        if (!CpfValidator.isValidCPF(cpfNumber)) {
+            log.warn("CPF inválido: {}", cpfNumber);
+            sendToDLQ(clientRequestDTO, message, "CPF inválido");
+            return;
+        }
+        Cpf cpf = new Cpf(cpfNumber);
+        if (clientRepository.existsByCpf(cpf)) {
+            log.warn("Cliente já existe: {}", cpf);
+            sendToDLQ(clientRequestDTO, message, "Cliente duplicado");
+            return;
+        }
+
+        // Validação dos livros antes de criar entidades
+        List<BookRequestDTO> booksDto = clientRequestDTO.getBooks();
+        if (booksDto != null) {
+            Set<String> bookErrors = booksDto.stream()
+                    .flatMap(bookDto -> validator.validate(bookDto).stream())
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .collect(Collectors.toSet());
+
+            if (!bookErrors.isEmpty()) {
+                String errorMsg = String.join(", ", bookErrors);
+                log.warn("Validação falhou para livros: {}", errorMsg);
+                sendToDLQ(clientRequestDTO, message, errorMsg);
+                return;
+            }
+        }
+
+        //  Persistência com tratamento de erro temporário
         try {
-            Cpf cpf = new Cpf(clientRequestDTO.getCpfNumber());
-            if (!CpfValidator.isValidCPF(String.valueOf(cpf))) {
-                log.warn("CPF inválido, descartando mensagem: {}", clientRequestDTO.getCpfNumber());
-                return;
-            }
-            if (clientRepository.existsByCpf(cpf)) {
-                log.warn("Cliente já existe: {}", cpf);
-                return;
-            }
-            // Converte DTO para entidade
             Client client = new Client();
             client.setName(clientRequestDTO.getName());
             client.setLastName(clientRequestDTO.getLastName());
-            client.setCpf(new Cpf(clientRequestDTO.getCpfNumber()));
+            client.setCpf(cpf);
 
-            if (clientRequestDTO.getBooks() != null) {
-                List<Book> books = clientRequestDTO.getBooks().stream().map(bookDto -> {
+            if (booksDto != null) {
+                List<Book> books = booksDto.stream().map(bookDto -> {
                     Book book = new Book();
                     book.setTitle(bookDto.getTitle());
                     book.setAuthor(bookDto.getAuthor());
                     book.setIsbn(bookDto.getIsbn());
                     book.setClient(client);
                     return book;
-                }).toList();
+                }).collect(Collectors.toList());
                 client.setBooks(books);
             }
 
             clientRepository.save(client);
-            log.info("Cliente salvo no consumer: {} {}", client.getName(), client.getLastName());
-        } catch (IllegalArgumentException e) {
-            log.warn("CPF inválido.: {}", e.getMessage());
+            log.info("Cliente salvo: {} {}", client.getName(), client.getLastName());
+
+        } catch (Exception e) {
+            log.error("Erro ao salvar cliente. Tentativa de retry.", e);
+            retryMessage(clientRequestDTO, message);
         }
-        catch (Exception e) {
-            Integer retryCount = (Integer) message.getMessageProperties().getHeaders().getOrDefault("x-retry-count",0);
-            if (retryCount < MAX_RETRIES){
-                int nextRetry = retryCount + 1;
-                rabbitTemplate.convertAndSend(
-                        RabbitMQConfig.EXCHANGE,
-                        RabbitMQConfig.RETRY_QUEUE_NAME,
-                        clientRequestDTO,
-                        m ->{
-                            m.getMessageProperties().setHeader("x-retry-count", nextRetry);
-                            return m;
-                        }
-                );
-                log.warn("Erro ao processar mensagem, retry {}/{}. Reenviando para retry queue.", nextRetry, MAX_RETRIES, e);
-            }else {
-               rabbitTemplate.convertAndSend(
-                       RabbitMQConfig.DLX_EXCHANGE,
-                       RabbitMQConfig.DLQ_ROUTING_KEY,
-                       clientRequestDTO
-               );
-               log.error("Mensagem movida para DLQ após {} tentativas. Erro: {}", MAX_RETRIES, e.getMessage(), e);
-            }
+    }
+
+    private void sendToDLQ(ClientRequestDTO dto, Message message, String reason) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.DLX_EXCHANGE,
+                RabbitMQConfig.DLQ_ROUTING_KEY,
+                dto);
+        log.error("Mensagem movida para DLQ. Motivo: {}", reason);
+    }
+
+    private void retryMessage(ClientRequestDTO dto, Message message) {
+        Integer retryCount = (Integer) message.getMessageProperties()
+                .getHeaders().getOrDefault("x-retry-count", 0);
+
+        if (retryCount < MAX_RETRIES) {
+            int nextRetry = retryCount + 1;
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE,
+                    RabbitMQConfig.RETRY_QUEUE_NAME,
+                    dto,
+                    m -> {
+                        m.getMessageProperties().setHeader("x-retry-count", nextRetry);
+                        return m;
+                    }
+            );
+            log.warn("Retry {}/{} enviado para retry queue", nextRetry, MAX_RETRIES);
+        } else {
+            sendToDLQ(dto, message, "Máximo de retries atingido");
         }
     }
 }
