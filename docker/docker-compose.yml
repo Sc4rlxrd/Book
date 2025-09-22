@@ -5,15 +5,27 @@ services:
     ports:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP
-  db:
+  db_book:
     image: postgres
-    container_name: db_postgresSql
+    container_name: db_book
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - db_volume:/var/lib/postgresql/data
+      - db_book_volume:/var/lib/postgresql/data
+#  db_dlq:
+#    image: postgres
+#    container_name: db_dlq
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: root
+#    ports:
+#      - "5434:5432"
+#    volumes:
+#      - db_dlq_volume:/var/lib/postgresql/data
 volumes:
-  db_volume:
+  db_book_volume:
+#  db_dlq_volume:
+
