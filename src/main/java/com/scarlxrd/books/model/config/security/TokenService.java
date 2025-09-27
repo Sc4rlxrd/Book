@@ -2,8 +2,8 @@ package com.scarlxrd.books.model.config.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTCreationException;
-import com.auth0.jwt.exceptions.JWTVerificationException;
+
+
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.scarlxrd.books.model.entity.User;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,48 +12,56 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
+
+import java.util.UUID;
 
 @Service
 public class TokenService {
     @Value("${api.security.token.secret}")
     private String secret;
+    @Value("${api.security.token.access-expiration-hours}")
+    private long accessExpirationHours;
+    @Value("${api.security.token.refresh-expiration-days}")
+    private long refreshExpirationDays;
 
-    public String generateToken(User user) {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(secret);
-            List<String> roles = user.getAuthorities().stream().map(auth -> auth.getAuthority()).toList();
-            String token = JWT.create()
-                    // quem está criando o token
-                    .withIssuer("book-api")
-                    // quem vai usar no caso vai o user passado anteriormente
-                    .withSubject(user.getEmail())
-                    // os papeis dele
-                    .withClaim("roles",roles)
-                    // quando vai expirar o token
-                    .withExpiresAt(generateExpirationDate()).
-                    sign(algorithm);
-            return token;
-
-        } catch (JWTCreationException exception) {
-            throw  new RuntimeException("Error while generating token", exception);
-        }
-    }
-    public DecodedJWT validateToken(String token){
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(secret);
-            return JWT.require(algorithm) // use esse algoritimo para validar
-                    .withIssuer("book-api") // quem criou a chave
-                    .build()
-                    .verify(token); // verificar o token para ver se é valido
-
-        } catch (JWTVerificationException e) {
-            throw new RuntimeException("Error while verify token", e);
-        }
+    private Algorithm getAlgorithm(){
+        return Algorithm.HMAC256(secret);
     }
 
+    public String generateAccessToken(User user) {
+        return JWT.create()
+                .withIssuer("book-api")
+                .withSubject(user.getEmail())
+                .withExpiresAt(LocalDateTime.now().plusHours(accessExpirationHours).toInstant(ZoneOffset.of("-03:00")))
+                .withJWTId(UUID.randomUUID().toString())
+                .sign(getAlgorithm());
+    }
 
-    private Instant generateExpirationDate() {
-        return LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.of("-03:00"));
+    public String generateRefreshToken(User user){
+        return JWT.create()
+                .withIssuer("book-api")
+                .withSubject(user.getEmail())
+                .withExpiresAt(LocalDateTime.now().plusHours(refreshExpirationDays).toInstant(ZoneOffset.of("-03:00")))
+                .withJWTId(UUID.randomUUID().toString())
+                .sign(getAlgorithm());
+    }
+    // Antigo metodo validate token agora atualizado
+    public DecodedJWT decode (String token){
+        return JWT.require(getAlgorithm())
+                .withIssuer("book-api")
+                .build()
+                .verify(token);
+    }
+
+    public String getSubject(String token){
+        return decode(token).getSubject();
+    }
+
+    public String getJti(String token) {
+        return decode(token).getId();
+    }
+
+    public Instant getExpiration(String token) {
+        return decode(token).getExpiresAt().toInstant();
     }
 }

@@ -1,6 +1,7 @@
 package com.scarlxrd.books.model.config.security;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.scarlxrd.books.model.config.redis.RedisService;
 import com.scarlxrd.books.model.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,16 +25,29 @@ public class SecurityFilter extends OncePerRequestFilter {
     TokenService tokenService;
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    RedisService redisService;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var token = this.recoverToken(request);
         if (token != null) {
-            DecodedJWT decoded = tokenService.validateToken(token);
-            String email = decoded.getSubject();
-            List<String> roles = decoded.getClaim("roles").asList(String.class);
-            var authorities = roles.stream().map(SimpleGrantedAuthority::new).toList();
-            var authentication = new UsernamePasswordAuthenticationToken(email,null,authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            try {
+                var decoded = tokenService.decode(token);
+                String jti = decoded.getId();
+
+                // verificar se não está na blackList
+                if (redisService.isBlackListed(jti)){
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
+                String login = decoded.getSubject();
+                UserDetails user = userRepository.findByEmail(login);
+                var authentication = new UsernamePasswordAuthenticationToken(user,null, user.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
         }
         filterChain.doFilter(request,response);
     }
