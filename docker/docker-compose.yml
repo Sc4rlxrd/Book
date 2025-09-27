@@ -15,6 +15,14 @@ services:
       - "5433:5432"
     volumes:
       - db_book_volume:/var/lib/postgresql/data
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis_data:/data
 #  db_dlq:
 #    image: postgres
 #    container_name: db_dlq
@@ -27,5 +35,6 @@ services:
 #      - db_dlq_volume:/var/lib/postgresql/data
 volumes:
   db_book_volume:
+  redis_data:
 #  db_dlq_volume:
 
