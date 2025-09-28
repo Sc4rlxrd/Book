@@ -1,15 +1,16 @@
 package com.scarlxrd.books.model.config.security;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.scarlxrd.books.model.config.redis.RedisService;
 import com.scarlxrd.books.model.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,8 +18,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
+import java.time.Instant;
 
+@Slf4j
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
     @Autowired
@@ -37,6 +39,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 
                 // verificar se não está na blackList
                 if (redisService.isBlackListed(jti)){
+                    log.warn("Token revogado detectado: jti={}", jti);
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
@@ -44,7 +47,22 @@ public class SecurityFilter extends OncePerRequestFilter {
                 UserDetails user = userRepository.findByEmail(login);
                 var authentication = new UsernamePasswordAuthenticationToken(user,null, user.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.info("Usuário autenticado: {}", login);
+
+                if ("/auth/refresh".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
+                    log.info("Refresh token usado: jti={}, user={}", jti, login);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+                if ("/auth/logout".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
+                    long ttl = Math.max(decoded.getExpiresAt().toInstant().getEpochSecond() - Instant.now().getEpochSecond(), 0);
+                    redisService.blackListToken(jti, ttl);
+                    log.info("Token colocado na blacklist (logout): jti={}, user={}", jti, login);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
             } catch (Exception e) {
+                log.error("Falha na autenticação do token: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }

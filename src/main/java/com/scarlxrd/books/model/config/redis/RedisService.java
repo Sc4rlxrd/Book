@@ -16,6 +16,8 @@ public class RedisService {
 
     // salve refresh token valido
     public void saveRefreshToken(String jti, long ttlSeconds){
+        // evitar passar TTL negativo ao Redis.
+        ttlSeconds = Math.max(ttlSeconds, 0);
         redisTemplate.opsForValue().set("refresh:" + jti, "valid", ttlSeconds, TimeUnit.SECONDS);
     }
 
@@ -24,11 +26,12 @@ public class RedisService {
     }
 
     public void deleteRefreshToken(String jti){
-        redisTemplate.delete("refresh" + jti);
+        redisTemplate.delete("refresh:" + jti);
     }
 
     // salva o access token na blackList
     public void blackListToken(String jti, long ttlSeconds){
+        ttlSeconds = Math.max(ttlSeconds, 0);
         redisTemplate.opsForValue().set("blacklist:" + jti, "revoked", ttlSeconds, TimeUnit.SECONDS);
     }
     public boolean isBlackListed(String jti){
