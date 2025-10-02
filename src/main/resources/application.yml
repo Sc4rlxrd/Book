@@ -17,11 +17,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: true
 
 api:
   security:
     token:
-      secret: ${JWT_SECRET:my-secret-key}
+      secret: ${JWT_SECRET:dd2e2add61a0cce0eb2bfb9c2d812515}
       access-expiration-hours: 1
       refresh-expiration-days: 7
 
@@ -29,3 +30,16 @@ app:
   admin:
     email: ${ADMIN_EMAIL:SCARLXRD@teste.com}
     password: ${ADMIN_PASSWORD:1234569999}
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: 'health,prometheus'
+  endpoint:
+    health:
+      enabled: true
+      show-details: always
+    prometheus:
+      enabled: true
