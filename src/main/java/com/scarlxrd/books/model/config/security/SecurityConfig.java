@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,22 +31,23 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
     @Autowired
     SecurityFilter securityFilter;
-
+    @Autowired
+    private UserDetailsService authorizationService;
     @Autowired
     @Qualifier("inMemoryUserDetailsManager")
     private UserDetailsService monitoringUserDetailsService;
 
-//    @Bean
-//    @Order(1)
-//    public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
-//        return httpSecurity
-//                .securityMatcher("/actuator/**")
-//                .csrf(AbstractHttpConfigurer::disable)
-//                .authorizeHttpRequests(authorize->authorize.anyRequest().authenticated())
-//                .userDetailsService(monitoringUserDetailsService)
-//                .httpBasic(withDefaults())
-//                .build();
-//    }
+    @Bean
+    @Order(1)
+    public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        return httpSecurity
+                .securityMatcher("/actuator/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize->authorize.anyRequest().authenticated())
+                .userDetailsService(monitoringUserDetailsService)
+                .httpBasic(withDefaults())
+                .build();
+    }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity.csrf(AbstractHttpConfigurer::disable)
@@ -58,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").authenticated()
                         .requestMatchers(HttpMethod.DELETE,"/v1/clients/{cpf}").hasRole("ADMIN")
                         .anyRequest().authenticated())
+                .httpBasic(withDefaults())
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -80,6 +83,13 @@ public class SecurityConfig {
         return  source;
     }
 
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(authorizationService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();

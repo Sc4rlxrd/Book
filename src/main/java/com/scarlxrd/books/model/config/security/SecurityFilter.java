@@ -74,6 +74,11 @@ public class SecurityFilter extends OncePerRequestFilter {
         if (authHeader == null) {
             return null;
         }
-        return authHeader.replace("Bearer ", "");
+        String normalizedHeader = authHeader.trim().toUpperCase();
+        if (!normalizedHeader.startsWith("BEARER ")) {
+            return null;
+        }
+        return authHeader.substring(authHeader.indexOf("Bearer ") + 7).trim();
     }
+
 }
