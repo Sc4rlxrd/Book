@@ -47,23 +47,11 @@ services:
       monitoring_net:
     volumes:
       - grafana_data:/var/lib/grafana
-#  db_dlq:
-#    image: postgres
-#    container_name: db_dlq
-#    environment:
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: root
-#    ports:
-#      - "5434:5432"
-#    volumes:
-#      - db_dlq_volume:/var/lib/postgresql/data
 volumes:
   db_book_volume:
   redis_data:
   grafana_data:
   prometheus_data:
-
-#  db_dlq_volume:
 
 networks:
   monitoring_net:
