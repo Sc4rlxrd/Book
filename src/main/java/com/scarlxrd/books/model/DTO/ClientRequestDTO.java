@@ -6,13 +6,13 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 public class ClientRequestDTO {
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "is mandatory")
     private String name;
 
-    @NotBlank(message = "Sobrenome é obrigatório")
+    @NotBlank(message = "is mandatory")
     private String lastName;
 
-    @NotBlank(message = "CPF é obrigatório")
+    @NotBlank(message = "is mandatory")
     private String cpfNumber;
 
     @Valid // Valida cada item na lista de BookRequestDTO

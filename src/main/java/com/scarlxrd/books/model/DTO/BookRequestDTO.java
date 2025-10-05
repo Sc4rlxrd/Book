@@ -2,11 +2,11 @@ package com.scarlxrd.books.model.DTO;
 
 import jakarta.validation.constraints.NotBlank;
 public class BookRequestDTO {
-    @NotBlank(message = "Título é obrigatório")
+    @NotBlank(message = "is mandatory")
     private String title;
-    @NotBlank(message = "Autor é obrigatório")
+    @NotBlank(message = "is mandatory")
     private String author;
-    @NotBlank(message = "ISBN é obrigatório")
+    @NotBlank(message = "is mandatory")
     private String isbn;
 
 

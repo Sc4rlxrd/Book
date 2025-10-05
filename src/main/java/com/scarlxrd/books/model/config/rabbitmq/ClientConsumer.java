@@ -117,7 +117,11 @@ public class ClientConsumer {
     private void sendToDLQ(ClientRequestDTO dto, Message message, String reason) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.DLX_EXCHANGE,
                 RabbitMQConfig.DLQ_ROUTING_KEY,
-                dto);
+                dto,
+                m ->{
+                    m.getMessageProperties().setHeader("x-reason", reason);
+                    return m;
+                });
         log.error("Mensagem movida para DLQ. Motivo: {}", reason);
     }
 
