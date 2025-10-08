@@ -1,20 +1,56 @@
 services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: book_service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db_book:5432/bookdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+      # -----------
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      # -----------
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      # -----------
+      JWT_SECRET: dd2e2add61a0cce0eb2bfb9c2d812515
+      ADMIN_EMAIL: SCARLXRD@teste.com
+      ADMIN_PASSWORD: 1234569999
+    depends_on:
+      - db_book
+      - rabbitmq
+      - redis
+    networks:
+      monitoring_net:
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP
+    networks:
+      monitoring_net:
   db_book:
     image: postgres
     container_name: db_book
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
+      POSTGRES_DB: bookdb
     ports:
       - "5433:5432"
     volumes:
       - db_book_volume:/var/lib/postgresql/data
+    networks:
+      monitoring_net:
+
   redis:
     image: redis
     container_name: redis
@@ -23,6 +59,8 @@ services:
     command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - redis_data:/data
+    networks:
+      monitoring_net:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
