@@ -1,8 +1,9 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/bookdb}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
+    platform: postgres
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   flyway:
@@ -27,17 +28,18 @@ spring:
     host: ${SPRING_REDIS_HOST:redis}
     port: ${SPRING_REDIS_PORT:6379}
 
+
 api:
   security:
     token:
-      secret: ${JWT_SECRET:dd2e2add61a0cce0eb2bfb9c2d812515}
+      secret: ${JWT_SECRET}
       access-expiration-hours: 1
       refresh-expiration-days: 7
 
 app:
   admin:
-    email: ${ADMIN_EMAIL:SCARLXRD@teste.com}
-    password: ${ADMIN_PASSWORD:1234569999}
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
 
 management:
   endpoints:
@@ -51,3 +53,8 @@ management:
       show-details: always
     prometheus:
       enabled: true
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -10,6 +10,7 @@ import com.scarlxrd.books.model.entity.CpfValidator;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
@@ -17,7 +18,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
@@ -30,6 +33,7 @@ public class ClientConsumer {
     private final ClientRepository clientRepository;
     private final RabbitTemplate rabbitTemplate;
     private final Validator validator;
+    private final EntityManager entityManager;
 
     private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
 
@@ -37,13 +41,15 @@ public class ClientConsumer {
 
     public ClientConsumer(ClientRepository clientRepository,
                           RabbitTemplate rabbitTemplate,
-                          Validator validator) {
+                          Validator validator, EntityManager entityManager) {
         this.clientRepository = clientRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.validator = validator;
+        this.entityManager = entityManager;
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
+    @Transactional
     public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message) {
 
         Set<ConstraintViolation<ClientRequestDTO>> violations = validator.validate(clientRequestDTO);
@@ -56,7 +62,6 @@ public class ClientConsumer {
             return;
         }
 
-
        String cpfNumber = clientRequestDTO.getCpfNumber();
         if (!CpfValidator.isValidCPF(cpfNumber)) {
             log.warn("CPF inválido: {}", cpfNumber);
@@ -64,11 +69,6 @@ public class ClientConsumer {
             return;
         }
         Cpf cpf = new Cpf(cpfNumber);
-        if (clientRepository.existsByCpf(cpf)) {
-            log.warn("Cliente já existe: {}", cpf);
-            sendToDLQ(clientRequestDTO, message, "Cliente duplicado");
-            return;
-        }
 
         // Validação dos livros antes de criar entidades
         List<BookRequestDTO> booksDto = clientRequestDTO.getBooks();
@@ -94,22 +94,29 @@ public class ClientConsumer {
             client.setCpf(cpf);
 
             if (booksDto != null) {
-                List<Book> books = booksDto.stream().map(bookDto -> {
+                booksDto.stream().forEach(bookDto -> {
                     Book book = new Book();
                     book.setTitle(bookDto.getTitle());
                     book.setAuthor(bookDto.getAuthor());
                     book.setIsbn(bookDto.getIsbn());
-                    book.setClient(client);
-                    return book;
-                }).collect(Collectors.toList());
-                client.setBooks(books);
+
+                    client.addBook(book);
+                });
             }
 
             clientRepository.save(client);
+            entityManager.flush();
             log.info("Cliente salvo: {} {}", client.getName(), client.getLastName());
 
-        } catch (Exception e) {
-            log.error("Erro ao salvar cliente. Tentativa de retry.", e);
+        }
+        catch (DataIntegrityViolationException e) {
+             //Chave duplicada detectada pelo banco. Mova para a DLQ.
+            // Isso garante que clientes duplicados não causem retries infinitos.
+            log.error("Erro: Cliente duplicado (CPF) detectado pelo DB. CPF: {}", cpf.getNumber());
+            sendToDLQ(clientRequestDTO, message, "Cliente duplicado (violação de chave única)");
+        }
+        catch (Exception e) {
+            log.error("Erro temporário ao salvar cliente. Tentativa de retry.", e);
             retryMessage(clientRequestDTO, message);
         }
     }

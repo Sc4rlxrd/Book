@@ -10,15 +10,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db_book:5432/bookdb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: root
-      # -----------
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-      # -----------
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
-      # -----------
       JWT_SECRET: dd2e2add61a0cce0eb2bfb9c2d812515
       ADMIN_EMAIL: SCARLXRD@teste.com
       ADMIN_PASSWORD: 1234569999
@@ -26,6 +23,7 @@ services:
       - db_book
       - rabbitmq
       - redis
+
     networks:
       monitoring_net:
 
@@ -43,7 +41,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
-      POSTGRES_DB: bookdb
+
     ports:
       - "5433:5432"
     volumes:
@@ -61,6 +59,12 @@ services:
       - redis_data:/data
     networks:
       monitoring_net:
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus

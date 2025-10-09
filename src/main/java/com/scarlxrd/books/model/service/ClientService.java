@@ -10,9 +10,10 @@ import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
 import com.scarlxrd.books.model.repository.ClientRepository;
-import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class ClientService {
         this.clientProducer = clientProducer;
     }
 
-    @Transactional // Garante que a operação seja atômica no banco de dados
+    @Transactional
     public ClientResponseDTO createClient(ClientRequestDTO requestDTO) {
         Cpf cpf = new Cpf(requestDTO.getCpfNumber());
         if (clientRepository.existsByCpf(cpf)) {
@@ -46,14 +47,10 @@ public class ClientService {
 
         // 4. Salva o cliente (e os livros em cascata devido a CascadeType.ALL)
         Client savedClient = clientRepository.save(client);
-        ClientResponseDTO response = new ClientResponseDTO(savedClient);
-        clientProducer.sendClient(requestDTO);
-        return response;
-
+        return new ClientResponseDTO(savedClient);
 
     }
-
-    @Transactional(Transactional.TxType.SUPPORTS)
+    @Transactional(readOnly = true)
     public List<ClientResponseDTO> getAllClients() {
         // Busca todos os clientes. FetchType.LAZY para books significa que os livros
         // só serão carregados quando acessados. Para carregar tudo de uma vez,
