@@ -48,12 +48,12 @@ public class SecurityFilter extends OncePerRequestFilter {
                 var authentication = new UsernamePasswordAuthenticationToken(user,null, user.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 log.info("Usuário autenticado: {}", login);
-
-                if ("/auth/refresh".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
-                    log.info("Refresh token usado: jti={}, user={}", jti, login);
-                    filterChain.doFilter(request, response);
-                    return;
-                }
+//
+//                if ("/auth/refresh".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
+//                    log.info("Refresh token usado: jti={}, user={}", jti, login);
+//                    filterChain.doFilter(request, response);
+//                    return;
+//                }
                 if ("/auth/logout".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
                     long ttl = Math.max(decoded.getExpiresAt().toInstant().getEpochSecond() - Instant.now().getEpochSecond(), 0);
                     redisService.blackListToken(jti, ttl);

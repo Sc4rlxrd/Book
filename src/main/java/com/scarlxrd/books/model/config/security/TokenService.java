@@ -41,7 +41,7 @@ public class TokenService {
         return JWT.create()
                 .withIssuer("book-api")
                 .withSubject(user.getEmail())
-                .withExpiresAt(LocalDateTime.now().plusHours(refreshExpirationDays).toInstant(ZoneOffset.of("-03:00")))
+                .withExpiresAt(LocalDateTime.now().plusDays(refreshExpirationDays).toInstant(ZoneOffset.of("-03:00")))
                 .withJWTId(UUID.randomUUID().toString())
                 .sign(getAlgorithm());
     }
