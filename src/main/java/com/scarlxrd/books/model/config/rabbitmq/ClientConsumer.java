@@ -10,7 +10,7 @@ import com.scarlxrd.books.model.entity.CpfValidator;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
 
-import jakarta.persistence.EntityManager;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
@@ -20,7 +20,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.transaction.support.TransactionTemplate;
 
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class ClientConsumer {
     private final ClientRepository clientRepository;
     private final RabbitTemplate rabbitTemplate;
     private final Validator validator;
-    private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
 
     private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
 
@@ -41,15 +42,14 @@ public class ClientConsumer {
 
     public ClientConsumer(ClientRepository clientRepository,
                           RabbitTemplate rabbitTemplate,
-                          Validator validator, EntityManager entityManager) {
+                          Validator validator, TransactionTemplate transactionTemplate) {
         this.clientRepository = clientRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.validator = validator;
-        this.entityManager = entityManager;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
-    @Transactional
     public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message) {
 
         Set<ConstraintViolation<ClientRequestDTO>> violations = validator.validate(clientRequestDTO);
@@ -88,25 +88,27 @@ public class ClientConsumer {
 
         //  Persistência com tratamento de erro temporário
         try {
-            Client client = new Client();
-            client.setName(clientRequestDTO.getName());
-            client.setLastName(clientRequestDTO.getLastName());
-            client.setCpf(cpf);
+            transactionTemplate.execute(status -> {
+                Client client = new Client();
+                client.setName(clientRequestDTO.getName());
+                client.setLastName(clientRequestDTO.getLastName());
+                client.setCpf(cpf);
 
-            if (booksDto != null) {
-                booksDto.stream().forEach(bookDto -> {
-                    Book book = new Book();
-                    book.setTitle(bookDto.getTitle());
-                    book.setAuthor(bookDto.getAuthor());
-                    book.setIsbn(bookDto.getIsbn());
+                if (booksDto != null) {
+                    booksDto.stream().forEach(bookDto -> {
+                        Book book = new Book();
+                        book.setTitle(bookDto.getTitle());
+                        book.setAuthor(bookDto.getAuthor());
+                        book.setIsbn(bookDto.getIsbn());
 
-                    client.addBook(book);
-                });
-            }
+                        client.addBook(book);
+                    });
+                }
 
-            clientRepository.save(client);
-            entityManager.flush();
-            log.info("Cliente salvo: {} {}", client.getName(), client.getLastName());
+                clientRepository.save(client);
+                log.info("Cliente salvo: {} {}", client.getName(), client.getLastName());
+                return null;
+            });
 
         }
         catch (DataIntegrityViolationException e) {
