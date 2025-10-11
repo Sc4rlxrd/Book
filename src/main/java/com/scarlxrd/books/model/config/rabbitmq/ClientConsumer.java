@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 
 import java.util.List;
@@ -30,17 +32,18 @@ public class ClientConsumer {
     private final ClientRepository clientRepository;
     private final RabbitTemplate rabbitTemplate;
     private final Validator validator;
-
+    private final TransactionTemplate transactionTemplate;
     private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
 
     private final int MAX_RETRIES = 3;
 
     public ClientConsumer(ClientRepository clientRepository,
                           RabbitTemplate rabbitTemplate,
-                          Validator validator) {
+                          Validator validator, TransactionTemplate transactionTemplate) {
         this.clientRepository = clientRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.validator = validator;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
@@ -56,20 +59,13 @@ public class ClientConsumer {
             return;
         }
 
-
        String cpfNumber = clientRequestDTO.getCpfNumber();
         if (!CpfValidator.isValidCPF(cpfNumber)) {
             log.warn("CPF inválido: {}", cpfNumber);
             sendToDLQ(clientRequestDTO, message, "CPF inválido");
             return;
         }
-        Cpf cpf = new Cpf(cpfNumber);
-        if (clientRepository.existsByCpf(cpf)) {
-            log.warn("Cliente já existe: {}", cpf);
-            sendToDLQ(clientRequestDTO, message, "Cliente duplicado");
-            return;
-        }
-
+        Cpf cpf = new Cpf();
         // Validação dos livros antes de criar entidades
         List<BookRequestDTO> booksDto = clientRequestDTO.getBooks();
         if (booksDto != null) {
@@ -88,28 +84,33 @@ public class ClientConsumer {
 
         //  Persistência com tratamento de erro temporário
         try {
-            Client client = new Client();
-            client.setName(clientRequestDTO.getName());
-            client.setLastName(clientRequestDTO.getLastName());
-            client.setCpf(cpf);
+            transactionTemplate.execute(status -> {
+                Client client = new Client();
+                client.setName(clientRequestDTO.getName());
+                client.setLastName(clientRequestDTO.getLastName());
+                client.setCpf(cpf);
 
-            if (booksDto != null) {
-                List<Book> books = booksDto.stream().map(bookDto -> {
-                    Book book = new Book();
-                    book.setTitle(bookDto.getTitle());
-                    book.setAuthor(bookDto.getAuthor());
-                    book.setIsbn(bookDto.getIsbn());
-                    book.setClient(client);
-                    return book;
-                }).collect(Collectors.toList());
-                client.setBooks(books);
-            }
+                if (booksDto != null) {
+                    booksDto.stream().forEach(bookDto -> {
+                        Book book = new Book();
+                        book.setTitle(bookDto.getTitle());
+                        book.setAuthor(bookDto.getAuthor());
+                        book.setIsbn(bookDto.getIsbn());
 
-            clientRepository.save(client);
-            log.info("Cliente salvo: {} {}", client.getName(), client.getLastName());
+                        client.addBook(book);
+                    });
+                }
 
-        } catch (Exception e) {
-            log.error("Erro ao salvar cliente. Tentativa de retry.", e);
+                clientRepository.save(client);
+                log.info("Cliente salvo: {} {}", client.getName(), client.getLastName());
+                return null;
+            });
+        }  catch (DataIntegrityViolationException e) {
+            log.error("Erro: Cliente duplicado (CPF) detectado pelo DB. CPF: {}", cpf.getNumber());
+            sendToDLQ(clientRequestDTO, message, "Cliente duplicado (violação de chave única)");
+        }
+        catch (Exception e) {
+            log.error("Erro temporário ao salvar cliente. Tentativa de retry.", e);
             retryMessage(clientRequestDTO, message);
         }
     }
