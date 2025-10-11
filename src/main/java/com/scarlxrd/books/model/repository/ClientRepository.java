@@ -5,8 +5,9 @@ import com.scarlxrd.books.model.entity.Cpf;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
+import java.util.UUID;
 
-public interface ClientRepository extends JpaRepository<Client,Long> {
+public interface ClientRepository extends JpaRepository<Client, UUID> {
     Optional<Client> findByCpf(Cpf cpf);
     boolean existsByCpf (Cpf cpf);
 }

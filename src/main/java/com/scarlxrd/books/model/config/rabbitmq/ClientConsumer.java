@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 @Component
 public class ClientConsumer {
-
     private final ClientRepository clientRepository;
     private final RabbitTemplate rabbitTemplate;
     private final Validator validator;
@@ -37,9 +36,7 @@ public class ClientConsumer {
 
     private final int MAX_RETRIES = 3;
 
-    public ClientConsumer(ClientRepository clientRepository,
-                          RabbitTemplate rabbitTemplate,
-                          Validator validator, TransactionTemplate transactionTemplate) {
+    public ClientConsumer(ClientRepository clientRepository, RabbitTemplate rabbitTemplate, Validator validator, TransactionTemplate transactionTemplate) {
         this.clientRepository = clientRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.validator = validator;
@@ -59,13 +56,20 @@ public class ClientConsumer {
             return;
         }
 
-       String cpfNumber = clientRequestDTO.getCpfNumber();
+
+        String cpfNumber = clientRequestDTO.getCpfNumber();
         if (!CpfValidator.isValidCPF(cpfNumber)) {
             log.warn("CPF inválido: {}", cpfNumber);
             sendToDLQ(clientRequestDTO, message, "CPF inválido");
             return;
         }
-        Cpf cpf = new Cpf();
+        Cpf cpf = new Cpf(cpfNumber);
+        if (clientRepository.existsByCpf(cpf)) {
+            log.warn("Cliente já existe: {}", cpf);
+            sendToDLQ(clientRequestDTO, message, "Cliente duplicado");
+            return;
+        }
+
         // Validação dos livros antes de criar entidades
         List<BookRequestDTO> booksDto = clientRequestDTO.getBooks();
         if (booksDto != null) {
@@ -91,14 +95,15 @@ public class ClientConsumer {
                 client.setCpf(cpf);
 
                 if (booksDto != null) {
-                    booksDto.stream().forEach(bookDto -> {
+                    List<Book> books = booksDto.stream().map(bookDto -> {
                         Book book = new Book();
                         book.setTitle(bookDto.getTitle());
                         book.setAuthor(bookDto.getAuthor());
                         book.setIsbn(bookDto.getIsbn());
-
-                        client.addBook(book);
-                    });
+                        book.setClient(client);
+                        return book;
+                    }).collect(Collectors.toList());
+                    client.setBooks(books);
                 }
 
                 clientRepository.save(client);
