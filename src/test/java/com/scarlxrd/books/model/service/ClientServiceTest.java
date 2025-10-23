@@ -33,7 +33,7 @@ class ClientServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        clientService = new ClientService(clientRepository,clientProducer);
+        clientService = new ClientService(clientRepository);
     }
 
     @Test

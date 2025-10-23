@@ -21,11 +21,10 @@ import java.util.stream.Collectors;
 @Service
 public class ClientService {
     private final ClientRepository clientRepository;
-    private final ClientProducer clientProducer;
 
-    public ClientService(ClientRepository clientRepository, ClientProducer clientProducer) {
+    public ClientService(ClientRepository clientRepository) {
         this.clientRepository = clientRepository;
-        this.clientProducer = clientProducer;
+
     }
 
    @Transactional// Garante que a operação seja atômica no banco de dados
