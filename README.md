@@ -7,19 +7,19 @@ A aplicação segue princípios modernos de **segurança (JWT + Redis)**, **obse
 
 ## 🚀 Tecnologias
 
-| Categoria | Tecnologia | Descrição |
-|------------|-------------|------------|
-| **Backend** | Spring Boot & Spring Web | Estrutura principal da API REST. |
-| **Persistência Principal** | Spring JPA & PostgreSQL | Armazenamento relacional de clientes e livros. |
-| **Mensageria** | RabbitMQ | Comunicação assíncrona entre serviços e filas de retry/DLQ. |
-| **Segurança** | Spring Security & JWT | Autenticação e autorização baseada em tokens JWT. |
-| **Cache/Token** | Redis | Armazena Refresh Tokens e gerencia blacklist de tokens. |
-| **Infraestrutura** | Docker | Containerização dos serviços (API, DB, Redis, RabbitMQ, Mongo). |
-| **Migrations** | Flyway | Controle de versão do esquema de banco de dados. |
-| **Monitoramento** | Prometheus & Grafana | Coleta e visualização de métricas. |
-| **Tratamento de Erros** | ProblemDetail | Respostas padronizadas em conformidade com RFC 7807. |
-| **Testes** | JUnit 5 & Mockito | Testes unitários e de integração. |
-| **Persistência DLQ** | MongoDB | Armazenamento das mensagens de erro da fila DLQ. |
+| Categoria | Tecnologia | Descrição                                                               |
+|------------|-------------|-------------------------------------------------------------------------|
+| **Backend** | Spring Boot & Spring Web | Estrutura principal da API REST.                                        |
+| **Persistência Principal** | Spring JPA & PostgreSQL | Armazenamento relacional de clientes e livros.                          |
+| **Mensageria** | RabbitMQ | Comunicação assíncrona entre serviços e filas de retry/DLQ.             |
+| **Segurança** | Spring Security & JWT | Autenticação e autorização baseada em tokens JWT.                       |
+| **Cache/Token** | Redis | Armazena Refresh Tokens e gerencia blacklist de tokens.                 |
+| **Infraestrutura** | Docker | Containerização dos serviços (API, PostgreSQL, Redis, RabbitMQ, Mongo). |
+| **Migrations** | Flyway | Controle de versão do esquema de banco de dados.                        |
+| **Monitoramento** | Prometheus & Grafana | Coleta e visualização de métricas.                                      |
+| **Tratamento de Erros** | ProblemDetail | Respostas padronizadas em conformidade com RFC 7807.                    |
+| **Testes** | JUnit 5 & Mockito | Testes unitários e de integração.                                       |
+| **Persistência DLQ** | MongoDB | Armazenamento das mensagens de erro da fila DLQ.                        |
 
 ---
 
