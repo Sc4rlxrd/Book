@@ -6,7 +6,7 @@ services:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP
   db_book:
-    image: postgres
+    image: postgres:15
     container_name: db_book
     environment:
       POSTGRES_USER: postgres
