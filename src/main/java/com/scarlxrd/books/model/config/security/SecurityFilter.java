@@ -54,13 +54,13 @@ public class SecurityFilter extends OncePerRequestFilter {
 //                    filterChain.doFilter(request, response);
 //                    return;
 //                }
-                if ("/auth/logout".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
-                    long ttl = Math.max(decoded.getExpiresAt().toInstant().getEpochSecond() - Instant.now().getEpochSecond(), 0);
-                    redisService.blackListToken(jti, ttl);
-                    log.info("Token colocado na blacklist (logout): jti={}, user={}", jti, login);
-                    filterChain.doFilter(request, response);
-                    return;
-                }
+//                if ("/auth/logout".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
+//                    long ttl = Math.max(decoded.getExpiresAt().toInstant().getEpochSecond() - Instant.now().getEpochSecond(), 0);
+//                    redisService.blackListToken(jti, ttl);
+//                    log.info("Token colocado na blacklist (logout): jti={}, user={}", jti, login);
+//                    filterChain.doFilter(request, response);
+//                    return;
+//                }
             } catch (Exception e) {
                 log.error("Falha na autenticação do token: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
