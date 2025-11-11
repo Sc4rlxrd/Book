@@ -12,6 +12,6 @@ import java.util.UUID;
 public interface ClientRepository extends JpaRepository<Client, UUID> {
     Optional<Client> findByCpf(Cpf cpf);
     boolean existsByCpf (Cpf cpf);
-    @Query("SELECT c FROM c JOIN FETCH c.books")
+    @Query("SELECT c FROM Client c JOIN FETCH c.books")
     List<Client> findAllWithBooks();
 }
