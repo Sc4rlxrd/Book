@@ -6,6 +6,8 @@ import com.scarlxrd.books.model.DTO.ClientResponseDTO;
 import com.scarlxrd.books.model.service.ClientService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,7 +39,11 @@ public class ClientController {
         // Chama o serviço para obter todos os clientes (já em formato DTO)
         return clientService.getAllClients();
     }
-
+    @GetMapping("/page") // Rota específica para paginação
+    public ResponseEntity<Page<ClientResponseDTO>> getPaged(Pageable pageable) {
+        Page<ClientResponseDTO> pagedResponse = clientService.getAllClientsPage(pageable);
+        return ResponseEntity.ok(pagedResponse);
+    }
     @DeleteMapping("/{cpf}")
     public ResponseEntity<Void> delete(@PathVariable String cpf) {
         clientService.deleteByCpf(cpf);
