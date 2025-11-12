@@ -14,6 +14,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -98,6 +102,37 @@ class ClientServiceTest {
         );
 
         verify(clientRepository, times(1)).findAll();
+
+    }
+    @Test
+    @DisplayName("Returns the clients from the repository with pagination.")
+    void getAllClientPage(){
+        UUID clientId = UUID.randomUUID();
+        Client client = new Client(clientId,"Guilherme" ,"Silva" , new Cpf("635.815.640-33"));
+        client.addBook(new Book("Clean Code","Robert C. Martin","9780132350884", client));
+        int pageNumber = 0;
+        int pageSize = 1;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        List<Client> clientsList = List.of(client);
+        Page<Client> mockedPage = new PageImpl<>(clientsList,pageable,clientsList.size());
+        when(clientRepository.findAll(pageable)).thenReturn(mockedPage);
+        Page<ClientResponseDTO> responsePage = clientService.getAllClientsPage(pageable);
+        ClientResponseDTO responseDTO = responsePage.getContent().get(0);
+        Assertions.assertAll(
+                ()-> assertNotNull(responsePage),
+                ()-> assertEquals(pageSize, responsePage.getContent().size()),
+                ()-> assertEquals(pageNumber, responsePage.getNumber()),
+                ()-> assertEquals(clientId, responseDTO.getId()),
+                ()-> assertEquals("Guilherme", responseDTO.getName()),
+                ()-> assertEquals("Silva", responseDTO.getLastName()),
+                ()-> assertEquals("635.815.640-33", responseDTO.getCpf()),
+                ()-> assertEquals(1, responseDTO.getBooks().size()), // Obs: troque para  1, precisa adicionar um book à entidade person antes
+                () -> assertEquals("Clean Code" , responseDTO.getBooks().getFirst().getTitle()),
+                () -> assertEquals("Robert C. Martin" , responseDTO.getBooks().getFirst().getAuthor()),
+                () -> assertEquals("9780132350884" , responseDTO.getBooks().getFirst().getIsbn())
+        );
+        verify(clientRepository, times(1)).findAll(pageable);
+
 
     }
 }
