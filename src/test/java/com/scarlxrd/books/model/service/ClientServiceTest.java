@@ -65,8 +65,8 @@ class ClientServiceTest {
         Assertions.assertAll(
                 () -> assertNotNull(responseDTO.getId()),
                 () -> assertEquals("Guilherme", responseDTO.getName()),
-                () -> assertEquals("Guilherme", responseDTO.getName()),
                 () -> assertEquals("Silva", responseDTO.getLastName()),
+                () -> assertEquals("158.248.900-99", responseDTO.getCpf()),
                 () -> assertEquals(1, responseDTO.getBooks().size()),
                 () -> assertEquals("Clean Code", responseDTO.getBooks().getFirst().getTitle())
 

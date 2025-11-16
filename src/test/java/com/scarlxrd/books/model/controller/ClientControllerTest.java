@@ -4,6 +4,7 @@ import com.scarlxrd.books.model.DTO.BookRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
 
+import com.scarlxrd.books.model.config.redis.RedisService;
 import com.scarlxrd.books.model.config.security.TokenService;
 import com.scarlxrd.books.model.repository.ClientRepository;
 import com.scarlxrd.books.model.repository.UserRepository;
@@ -48,6 +49,8 @@ class ClientControllerTest {
     private TokenService tokenService;
     @Autowired
     private ObjectMapper objectMapper;
+    @MockitoBean
+    private RedisService redisService;
 
     @Test
     @DisplayName("Deve criar um cliente e retornar status 201 CREATED com Role ADMIN")
@@ -141,10 +144,8 @@ class ClientControllerTest {
         );
         List<ClientResponseDTO> clients = List.of(response1,response2);
 
-        //  Comportamento do mock: quando clientService.getAllClients() for chamado, retorne a lista
         when(clientService.getAllClients()).thenReturn(clients);
 
-        // Simula a requisição GET e valida o resultado
         mockMvc.perform(MockMvcRequestBuilders.get("/v1/clients")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isOk()) // Espera status 200
@@ -178,15 +179,14 @@ class ClientControllerTest {
         );
         List<ClientResponseDTO> clients = List.of(response1,response2);
 
-        //  Comportamento do mock: quando clientService.getAllClients() for chamado, retorne a lista
+
         when(clientService.getAllClients()).thenReturn(clients);
 
-        // Simula a requisição GET e valida o resultado
         mockMvc.perform(MockMvcRequestBuilders.get("/v1/clients")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk()) // Espera status 200
-                .andExpect(jsonPath("$").isArray()) // Espera uma lista
-                .andExpect(jsonPath("$.length()").value(2)) // Verifica o tamanho da lista
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("Guilherme")) // Verifica o nome do primeiro item
                 .andExpect(jsonPath("$[0].lastName").value("Silva"))
                 .andExpect(jsonPath("$[0]cpf").value("158.248.900-99"))
@@ -195,18 +195,18 @@ class ClientControllerTest {
                 .andExpect(jsonPath("$[1]cpf").value("971.456.040-35"));
     }
 
-    // Teste para o endpoint DELETE /v1/clients/{cpf}
+
     @Test
     @DisplayName("Deve deletar um cliente e retornar status 200 OK Com Role ADMIN")
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void shouldDeleteClientAndReturnOkStatusWithTheRoleAdmin() throws Exception {
         String cpf = "971.456.040-35";
-        //  Comportamento do mock: quando clientService.deleteByCpf() for chamado, não faça nada (void)
+
         doNothing().when(clientService).deleteByCpf(cpf);
-        //  Simula a requisição DELETE e valida o resultado
+
         mockMvc.perform(MockMvcRequestBuilders.delete("/v1/clients/{cpf}", cpf))
-                .andExpect(MockMvcResultMatchers.status().isOk()); // Espera status 200
-        //  Verifica se o mét0do do serviço foi realmente chamado
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
         verify(clientService, times(1)).deleteByCpf(cpf);
     }
 
@@ -217,7 +217,6 @@ class ClientControllerTest {
 class ClientControllerSecurityTest {
     @Autowired
     private MockMvc mockMvc;
-
     @MockitoBean
     private ClientService clientService;
     @MockitoBean
@@ -228,6 +227,8 @@ class ClientControllerSecurityTest {
     private TokenService tokenService;
     @Autowired
     private ObjectMapper objectMapper;
+    @MockitoBean
+    private RedisService redisService;
 
     @Test
     @DisplayName(" Deve retornar 401 se não autenticado")
