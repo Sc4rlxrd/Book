@@ -3,6 +3,7 @@ package com.scarlxrd.books.model.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
+import com.scarlxrd.books.model.config.redis.RedisService;
 import com.scarlxrd.books.model.config.security.TokenService;
 import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
@@ -41,6 +42,8 @@ public class ClientControllerExceptionTest {
     private UserRepository userRepository;
     @MockitoBean
     private TokenService tokenService;
+    @MockitoBean
+    private RedisService redisService;
 
     @Test
     @DisplayName("Deve retornar 404 Not Found quando cliente não existe")
