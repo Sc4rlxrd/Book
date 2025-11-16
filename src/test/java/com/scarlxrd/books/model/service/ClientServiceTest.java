@@ -92,7 +92,7 @@ class ClientServiceTest {
     @DisplayName("Returns all clients in the repository")
     void getAllClients() {
         Client client = new Client(UUID.randomUUID(), "Guilherme", "Silva", new Cpf("635.815.640-33"));
-        when(clientRepository.findAll()).thenReturn(List.of(client));
+        when(clientRepository.findAllWithBooks()).thenReturn(List.of(client));
         List<ClientResponseDTO> response = clientService.getAllClients();
         Assertions.assertAll(
                 () -> assertEquals(1, response.size()),
@@ -101,7 +101,7 @@ class ClientServiceTest {
                 () -> assertEquals("635.815.640-33", response.getFirst().getCpf())
         );
 
-        verify(clientRepository, times(1)).findAll();
+        verify(clientRepository, times(1)).findAllWithBooks();
 
     }
     @Test
