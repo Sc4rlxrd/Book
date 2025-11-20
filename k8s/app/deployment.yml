@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: book-app
+  template:
+    metadata:
+      labels:
+        app: book-app
+    spec:
+      containers:
+        - name: book-app
+          image: book:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: book-configMap
+            - secretRef:
+                name: book-secret
