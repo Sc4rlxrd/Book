@@ -1,7 +1,6 @@
 package com.scarlxrd.books.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.scarlxrd.books.model.entity.Client;
 import jakarta.persistence.*;
 
 import java.util.UUID;
