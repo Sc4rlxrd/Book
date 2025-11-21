@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-book
+spec:
+  selector:
+    app: db-book
+  ports:
+    - port: 5234
+      targetPort: 5432
