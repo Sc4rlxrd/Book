@@ -6,5 +6,5 @@ spec:
   selector:
     app: db-book
   ports:
-    - port: 5234
+    - port: 5432
       targetPort: 5432

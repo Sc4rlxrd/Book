@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: book-configMap
+  name: book-config
 data:
   SPRING_DATASOURCE_URL: "jdbc:postgresql://db-book:5432/bookdb"
   SPRING_RABBITMQ_HOST: "rabbitmq"

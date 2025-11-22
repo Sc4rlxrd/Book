@@ -14,11 +14,12 @@ spec:
     spec:
       containers:
         - name: book-app
-          image: book:latest
+          image: book:v1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           envFrom:
             - configMapRef:
-                name: book-configMap
+                name: book-config
             - secretRef:
                 name: book-secret

@@ -10,7 +10,7 @@ spec:
   template:
     metadata:
       labels:
-        app: book-app
+        app: db-book
     spec:
       containers:
         - name: postgres
