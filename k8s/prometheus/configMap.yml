@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+
+    scrape_configs:
+      - job_name: "api-book-service"
+        metrics_path: "/actuator/prometheus"
+        basic_auth:
+          username: admin
+          password: admin
+        static_configs:
+          - targets: ["book-app:8080"]
+      
+      - job_name: "book-api"
+        static_configs:
+          - targets: ["localhost:9090"]
