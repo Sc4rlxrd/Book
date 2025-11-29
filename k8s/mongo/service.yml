@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-dlq-book
+spec:
+  selector:
+    app: db-dlq-book
+  ports:
+    - port: 27017
+      targetPort: 27017

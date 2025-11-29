@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db-dlq-book
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-dlq-book
+  template:
+    metadata:
+      labels:
+        app: db-dlq-book
+    spec:
+      containers:
+        - name: db-dlq-book
+          image: mongo:7.0
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: "admin"
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: "123"
+            - name: MONGO_INITDB_DATABASE
+              value: "book_dlq_db"
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+  volumeClaimTemplate:
+    - metadata:
+        name: mongo-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
