@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-dlq-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-dlq-app
+  template:
+    metadata:
+      labels:
+        app: book-dlq-app
+    spec:
+      containers:
+        - name: book-dlq-app
+          image:  bookdlq:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: dlq-config
+            - secretRef:
+                name: mongo-credentials
