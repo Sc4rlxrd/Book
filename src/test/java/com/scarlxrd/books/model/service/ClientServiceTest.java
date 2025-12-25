@@ -7,6 +7,8 @@ import com.scarlxrd.books.model.config.rabbitmq.ClientProducer;
 import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
+import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import com.scarlxrd.books.model.repository.BookRepository;
 import com.scarlxrd.books.model.repository.ClientRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
@@ -31,13 +34,15 @@ class ClientServiceTest {
     @Mock
     private ClientRepository clientRepository;
     @Mock
+    private BookRepository bookRepository;
+    @Mock
     private ClientService clientService;
     @Mock
     private ClientProducer clientProducer;
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        clientService = new ClientService(clientRepository);
+        clientService = new ClientService(clientRepository, bookRepository);
     }
 
     @Test
@@ -133,6 +138,55 @@ class ClientServiceTest {
         );
         verify(clientRepository, times(1)).findAll(pageable);
 
+
+    }
+
+    @Test
+    @DisplayName("Successfully adds a book to an existing client")
+    void addBookToClient_Success(){
+
+        String cpfNumber = "262.466.650-80";
+        BookRequestDTO bookRequestDTO = new BookRequestDTO();
+        bookRequestDTO.setTitle("The Pragmatic Programmer");
+        bookRequestDTO.setAuthor("Andrew Hunt");
+        bookRequestDTO.setIsbn("9780201616224");
+
+        Client client  = new Client(UUID.randomUUID(), "Guilherme","Silva", new Cpf(cpfNumber));
+
+        Book savedBook = new Book(bookRequestDTO.getTitle(), bookRequestDTO.getAuthor(), bookRequestDTO.getIsbn(), client);
+
+        when(clientRepository.findByCpf(any(Cpf.class))).thenReturn(Optional.of(client));
+        when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
+
+        var responseDto = clientService.addBookToClient(cpfNumber, bookRequestDTO);
+
+        Assertions.assertAll(
+                () -> assertNotNull(responseDto),
+                () -> assertEquals(bookRequestDTO.getTitle(), responseDto.getTitle()),
+                () -> assertEquals(bookRequestDTO.getAuthor(), responseDto.getAuthor()),
+                () -> assertEquals(bookRequestDTO.getIsbn(), responseDto.getIsbn())
+        );
+        verify(clientRepository, times(1)).findByCpf(any(Cpf.class));
+        verify(bookRepository, times(1)).save(any(Book.class));
+    }
+
+    @Test
+    @DisplayName("Throws ClientNotFoundException when adding book to non-existent CPF")
+    void addBookToClient_ThrowsClientNotFoundException(){
+
+        String cpfNumber = "262.466.650-80";
+        BookRequestDTO bookRequestDTO = new BookRequestDTO();
+        bookRequestDTO.setTitle("The Pragmatic Programmer");
+        bookRequestDTO.setAuthor("Andrew Hunt");
+        bookRequestDTO.setIsbn("9780201616224");
+
+        Client client  = new Client(UUID.randomUUID(), "Guilherme","Silva", new Cpf(cpfNumber));
+
+        Book savedBook = new Book(bookRequestDTO.getTitle(), bookRequestDTO.getAuthor(), bookRequestDTO.getIsbn(), client);
+
+        Assertions.assertThrows(ClientNotFoundException.class,() -> clientService.addBookToClient(cpfNumber, bookRequestDTO));
+
+        verify(bookRepository, never()).save(any(Book.class));
 
     }
 }
