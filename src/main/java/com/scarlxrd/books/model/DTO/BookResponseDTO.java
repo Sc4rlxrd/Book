@@ -20,6 +20,12 @@ public class BookResponseDTO {
         this.isbn = book.getIsbn();
     }
 
+    public BookResponseDTO(String title, String author, String isbn) {
+        this.title = title;
+        this.author = author;
+        this.isbn = isbn;
+    }
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getTitle() { return title; }

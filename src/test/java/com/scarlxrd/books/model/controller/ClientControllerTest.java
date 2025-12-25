@@ -1,11 +1,13 @@
 package com.scarlxrd.books.model.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scarlxrd.books.model.DTO.BookRequestDTO;
+import com.scarlxrd.books.model.DTO.BookResponseDTO;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
 
 import com.scarlxrd.books.model.config.redis.RedisService;
 import com.scarlxrd.books.model.config.security.TokenService;
+import com.scarlxrd.books.model.exception.ClientNotFoundException;
 import com.scarlxrd.books.model.repository.ClientRepository;
 import com.scarlxrd.books.model.repository.UserRepository;
 import com.scarlxrd.books.model.service.ClientService;
@@ -208,6 +210,58 @@ class ClientControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isOk());
 
         verify(clientService, times(1)).deleteByCpf(cpf);
+    }
+
+    @Test
+    @DisplayName("Deve adicionar um livro a um cliente e retornar 201 Created")
+    @WithMockUser(username = "user", roles = {"USER"})
+    void shouldAddBookToClientAndReturnCreatedStatus() throws Exception {
+
+        String cpf = "971.456.040-35";
+        BookRequestDTO bookRequestDTO = new BookRequestDTO();
+        bookRequestDTO.setTitle("The Pragmatic Programmer");
+        bookRequestDTO.setAuthor("Andrew Hunt");
+        bookRequestDTO.setIsbn("9780201616224");
+
+        BookResponseDTO responseDTO = new BookResponseDTO("The Pragmatic Programmer", "Andrew Hunt", "9780201616224");
+
+        when(clientService.addBookToClient(eq(cpf), any(BookRequestDTO.class))).thenReturn(responseDTO);
+
+        mockMvc.perform(post("/v1/clients/{cpf}", cpf)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bookRequestDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("The Pragmatic Programmer"))
+                .andExpect(jsonPath("$.author").value("Andrew Hunt"))
+                .andExpect(jsonPath("$.isbn").value("9780201616224"));
+
+        verify(clientService, times(1)).addBookToClient(eq(cpf), any(BookRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 Not Found quando o CPF do cliente não existir")
+    @WithMockUser(username = "user", roles = {"USER"})
+    void shouldReturnNotFoundWhenClientCpfDoesNotExist() throws Exception {
+        // Arrange
+        String cpfInexistente = "000.000.000-00";
+        BookRequestDTO bookRequestDTO = new BookRequestDTO();
+        bookRequestDTO.setTitle("The Pragmatic Programmer");
+        bookRequestDTO.setAuthor("Andrew Hunt");
+        bookRequestDTO.setIsbn("9780201616224");
+
+
+        when(clientService.addBookToClient(eq(cpfInexistente), any(BookRequestDTO.class)))
+                .thenThrow(new ClientNotFoundException("Cliente com CPF " + cpfInexistente + " não encontrado"));
+
+        // Act & Assert
+        mockMvc.perform(post("/v1/clients/{cpf}", cpfInexistente)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bookRequestDTO)))
+                .andExpect(status().isNotFound()) // Espera 404
+                .andExpect(jsonPath("$.title").value("Client not found"))
+                .andExpect(jsonPath("$.detail").value("Cliente com CPF 000.000.000-00 não encontrado"));
+
+        verify(clientService, times(1)).addBookToClient(eq(cpfInexistente), any(BookRequestDTO.class));
     }
 
 }
