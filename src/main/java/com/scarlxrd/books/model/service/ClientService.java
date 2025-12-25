@@ -2,6 +2,7 @@ package com.scarlxrd.books.model.service;
 
 import com.scarlxrd.books.model.DTO.BookRequestDTO;
 
+import com.scarlxrd.books.model.DTO.BookResponseDTO;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
 
@@ -10,6 +11,7 @@ import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import com.scarlxrd.books.model.repository.BookRepository;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
 import org.springframework.data.domain.Page;
@@ -24,10 +26,11 @@ import java.util.stream.Collectors;
 @Service
 public class ClientService {
     private final ClientRepository clientRepository;
+    private final BookRepository bookRepository;
 
-    public ClientService(ClientRepository clientRepository) {
+    public ClientService(ClientRepository clientRepository, BookRepository bookRepository) {
         this.clientRepository = clientRepository;
-
+        this.bookRepository = bookRepository;
     }
 
    @Transactional// Garante que a operação seja atômica no banco de dados
@@ -70,5 +73,13 @@ public class ClientService {
         Client client = clientRepository.findByCpf(cpf).orElseThrow(() -> new ClientNotFoundException("Cliente com CPF " + cpfNumber + " não encontrado"));
         clientRepository.delete(client);
     }
-
+    @Transactional
+    public BookResponseDTO addBookToClient(String cpfNumber , BookRequestDTO bookDTO) {
+        Cpf cpf = new Cpf(cpfNumber);
+        Client client = clientRepository.findByCpf(cpf).orElseThrow(()-> new ClientNotFoundException("Cliente com CPF " + cpfNumber + " não encontrado"));
+        Book book = new Book(bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), client);
+        client.addBook(book);
+        Book savedBook = bookRepository.save(book);
+        return new BookResponseDTO(savedBook);
+    }
 }

@@ -1,6 +1,8 @@
 package com.scarlxrd.books.model.controller;
 
 
+import com.scarlxrd.books.model.DTO.BookRequestDTO;
+import com.scarlxrd.books.model.DTO.BookResponseDTO;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
 import com.scarlxrd.books.model.service.ClientService;
@@ -49,5 +51,10 @@ public class ClientController {
         clientService.deleteByCpf(cpf);
         return ResponseEntity.ok().build();
 
+    }
+    @PostMapping("/{cpf}")
+    public ResponseEntity<BookResponseDTO> addBookToClient(@PathVariable String cpf, @Valid @RequestBody BookRequestDTO bookRequestDTO) {
+        BookResponseDTO response = clientService.addBookToClient(cpf, bookRequestDTO);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }
