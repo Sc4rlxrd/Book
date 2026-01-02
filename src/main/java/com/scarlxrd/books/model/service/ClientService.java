@@ -33,30 +33,20 @@ public class ClientService {
         this.bookRepository = bookRepository;
     }
 
-   @Transactional// Garante que a operação seja atômica no banco de dados
+   @Transactional
     public ClientResponseDTO createClient(ClientRequestDTO requestDTO) {
         Cpf cpf = new Cpf(requestDTO.getCpfNumber());
         if (clientRepository.existsByCpf(cpf)) {
             throw new ClientAlreadyExistsException("Já existe um cliente cadastrado com este CPF: " + cpf);
         }
 
-        Client client = new Client(null, requestDTO.getName(), requestDTO.getLastName(), cpf);
-        // 3. Adiciona os livros ao cliente
-        if (requestDTO.getBooks() != null && !requestDTO.getBooks().isEmpty()) {
-            for (BookRequestDTO bookDTO : requestDTO.getBooks()) {
-                Book book = new Book(bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), client);
-                client.addBook(book); // Usa o mét0do auxiliar para manter a bidirecionalidade
-            }
-        }
-
-        // 4. Salva o cliente (e os livros em cascata devido a CascadeType.ALL)
+        Client client = buildClient(requestDTO, cpf);
         Client savedClient = clientRepository.save(client);
         return new ClientResponseDTO(savedClient);
 
-
     }
 
-   @Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public List<ClientResponseDTO> getAllClients() {
        // arrumando o problema de N+1
         return clientRepository.findAllWithBooks().stream().map(ClientResponseDTO::new).collect(Collectors.toList());
@@ -82,4 +72,17 @@ public class ClientService {
         Book savedBook = bookRepository.save(book);
         return new BookResponseDTO(savedBook);
     }
+
+
+    private static Client buildClient(ClientRequestDTO requestDTO, Cpf cpf) {
+        Client client = new Client(null, requestDTO.getName(), requestDTO.getLastName(), cpf);
+        if (requestDTO.getBooks() != null && !requestDTO.getBooks().isEmpty()) {
+            for (BookRequestDTO bookDTO : requestDTO.getBooks()) {
+                Book book = new Book(bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), client);
+                client.addBook(book); // Usa o mét0do auxiliar para manter a bidirecionalidade
+            }
+        }
+        return client;
+    }
+
 }
