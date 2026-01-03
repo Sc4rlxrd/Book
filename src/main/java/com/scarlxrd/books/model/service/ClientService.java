@@ -73,6 +73,11 @@ public class ClientService {
         return new BookResponseDTO(savedBook);
     }
 
+    public ClientResponseDTO getClientByCpf(String cpfNumber) {
+        Cpf cpf = new Cpf(cpfNumber);
+        Client client = clientRepository.findByCpf(cpf).orElseThrow(()-> new ClientNotFoundException("Cliente com CPF " + cpfNumber + " não encontrado"));
+        return new ClientResponseDTO(client);
+    }
 
     private static Client buildClient(ClientRequestDTO requestDTO, Cpf cpf) {
         Client client = new Client(null, requestDTO.getName(), requestDTO.getLastName(), cpf);

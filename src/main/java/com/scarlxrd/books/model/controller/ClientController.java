@@ -57,4 +57,9 @@ public class ClientController {
         BookResponseDTO response = clientService.addBookToClient(cpf, bookRequestDTO);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+    @GetMapping("/{cpf}")
+    public ResponseEntity<ClientResponseDTO> getClientByCpf(@PathVariable String cpf) {
+        ClientResponseDTO response = clientService.getClientByCpf(cpf);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }
