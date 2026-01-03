@@ -11,6 +11,7 @@ import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import com.scarlxrd.books.model.mapper.ClientMapper;
 import com.scarlxrd.books.model.repository.BookRepository;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
@@ -28,9 +29,13 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final BookRepository bookRepository;
 
-    public ClientService(ClientRepository clientRepository, BookRepository bookRepository) {
+    private final ClientMapper clientMapper;
+
+    public ClientService(ClientRepository clientRepository, BookRepository bookRepository, ClientMapper clientMapper) {
         this.clientRepository = clientRepository;
         this.bookRepository = bookRepository;
+
+        this.clientMapper = clientMapper;
     }
 
    @Transactional
@@ -40,21 +45,25 @@ public class ClientService {
             throw new ClientAlreadyExistsException("Já existe um cliente cadastrado com este CPF: " + cpf);
         }
 
-        Client client = buildClient(requestDTO, cpf);
+        Client client = clientMapper.toEntity(requestDTO);
+        if (client.getBooks() != null) {
+            client.getBooks().forEach(book -> book.setClient(client));
+        }
+
         Client savedClient = clientRepository.save(client);
-        return new ClientResponseDTO(savedClient);
+        return clientMapper.toResponse(savedClient);
 
     }
 
     @Transactional(readOnly = true)
     public List<ClientResponseDTO> getAllClients() {
        // arrumando o problema de N+1
-        return clientRepository.findAllWithBooks().stream().map(ClientResponseDTO::new).collect(Collectors.toList());
+        return clientRepository.findAllWithBooks().stream().map(clientMapper::toResponse).collect(Collectors.toList());
     }
     @Transactional(readOnly = true)
     public Page<ClientResponseDTO> getAllClientsPage(Pageable pageable){
         Page<Client> clientPage = clientRepository.findAll(pageable);
-        return clientPage.map(ClientResponseDTO::new);
+        return clientPage.map(clientMapper::toResponse);
     }
 
    @Transactional
@@ -76,18 +85,8 @@ public class ClientService {
     public ClientResponseDTO getClientByCpf(String cpfNumber) {
         Cpf cpf = new Cpf(cpfNumber);
         Client client = clientRepository.findByCpf(cpf).orElseThrow(()-> new ClientNotFoundException("Cliente com CPF " + cpfNumber + " não encontrado"));
-        return new ClientResponseDTO(client);
+        return clientMapper.toResponse(client);
     }
 
-    private static Client buildClient(ClientRequestDTO requestDTO, Cpf cpf) {
-        Client client = new Client(null, requestDTO.getName(), requestDTO.getLastName(), cpf);
-        if (requestDTO.getBooks() != null && !requestDTO.getBooks().isEmpty()) {
-            for (BookRequestDTO bookDTO : requestDTO.getBooks()) {
-                Book book = new Book(bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), client);
-                client.addBook(book); // Usa o mét0do auxiliar para manter a bidirecionalidade
-            }
-        }
-        return client;
-    }
 
 }

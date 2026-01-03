@@ -1,10 +1,7 @@
 package com.scarlxrd.books.model.DTO;
 
-import com.scarlxrd.books.model.entity.Client;
-
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class ClientResponseDTO {
     private UUID id;
@@ -12,16 +9,6 @@ public class ClientResponseDTO {
     private String lastName;
     private String cpf; // Já formatado pelo @JsonValue no Cpf.java
     private List<BookResponseDTO> books; // Lista de DTOs de livros
-
-    public ClientResponseDTO(Client client) {
-        this.id = client.getId();
-        this.name = client.getName();
-        this.lastName = client.getLastName();
-        this.cpf = client.getCpf() != null ? client.getCpf().toString() : null; // Usa o toString() formatado
-        this.books = client.getBooks().stream()
-                .map(BookResponseDTO::new) // Converte cada Book para BookResponseDTO
-                .collect(Collectors.toList());
-    }
 
     public ClientResponseDTO(UUID id, String name, String lastName, String cpf, List<BookResponseDTO> books) {
         this.id = id;
