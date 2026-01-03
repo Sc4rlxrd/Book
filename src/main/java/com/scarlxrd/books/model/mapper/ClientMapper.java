@@ -16,7 +16,7 @@ public interface ClientMapper {
     @Mapping(target = "cpf",expression = "java(new Cpf(dto.getCpfNumber()))")
     Client toEntity(ClientRequestDTO dto);
 
-    @Mapping(target = "cpf", expression = "java(client.getCpf().getNumber())")
+    @Mapping(target = "cpf", expression = "java(client.getCpf().toString())")
     ClientResponseDTO toResponse(Client client);
 
     @AfterMapping

@@ -8,12 +8,16 @@ import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import com.scarlxrd.books.model.mapper.BookMapper;
+import com.scarlxrd.books.model.mapper.ClientMapper;
+import com.scarlxrd.books.model.mapper.ClientMapperImpl;
 import com.scarlxrd.books.model.repository.BookRepository;
 import com.scarlxrd.books.model.repository.ClientRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Page;
@@ -31,20 +35,30 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class ClientServiceTest {
+
+    private ClientService clientService;
     @Mock
     private ClientRepository clientRepository;
     @Mock
     private BookRepository bookRepository;
-    @Mock
-    private ClientService clientService;
-    @Mock
-    private ClientProducer clientProducer;
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        clientService = new ClientService(clientRepository, bookRepository);
-    }
+    private final ClientMapper clientMapper = Mappers.getMapper(ClientMapper.class);
+    private final BookMapper bookMapper = Mappers.getMapper(BookMapper.class);
 
+    @BeforeEach
+    void setUp() throws NoSuchFieldException, IllegalAccessException {
+        MockitoAnnotations.openMocks(this);
+
+        ClientMapperImpl impl = (ClientMapperImpl) clientMapper;
+        var field = ClientMapperImpl.class.getDeclaredField("bookMapper");
+        field.setAccessible(true);
+        field.set(impl, bookMapper);
+        clientService = new ClientService(
+                clientRepository,
+                bookRepository,
+                clientMapper,
+                bookMapper
+        );
+    }
     @Test
     @DisplayName("Creates a client with a list of books associated with it")
     void createClient_Success_WithAListOfBooks() {
@@ -59,9 +73,11 @@ class ClientServiceTest {
         bookRequestDTO.setIsbn("9780132350884");
         requestDTO.setBooks(List.of(bookRequestDTO));
 
+
         Client client = new Client(UUID.randomUUID(), requestDTO.getName(), requestDTO.getLastName(), new Cpf(requestDTO.getCpfNumber()));
         client.addBook(new Book(bookRequestDTO.getTitle(), bookRequestDTO.getAuthor(), bookRequestDTO.getIsbn(), client));
 
+        when(clientRepository.existsByCpf(any(Cpf.class))).thenReturn(false);
         when(clientRepository.save(any(Client.class))).thenReturn(client);
 
         // Act
