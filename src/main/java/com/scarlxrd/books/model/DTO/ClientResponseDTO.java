@@ -10,6 +10,9 @@ public class ClientResponseDTO {
     private String cpf; // Já formatado pelo @JsonValue no Cpf.java
     private List<BookResponseDTO> books; // Lista de DTOs de livros
 
+    public ClientResponseDTO() {
+    }
+
     public ClientResponseDTO(UUID id, String name, String lastName, String cpf, List<BookResponseDTO> books) {
         this.id = id;
         this.name = name;

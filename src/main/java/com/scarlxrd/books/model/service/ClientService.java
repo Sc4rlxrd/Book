@@ -11,6 +11,7 @@ import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import com.scarlxrd.books.model.mapper.BookMapper;
 import com.scarlxrd.books.model.mapper.ClientMapper;
 import com.scarlxrd.books.model.repository.BookRepository;
 import com.scarlxrd.books.model.repository.ClientRepository;
@@ -28,14 +29,14 @@ import java.util.stream.Collectors;
 public class ClientService {
     private final ClientRepository clientRepository;
     private final BookRepository bookRepository;
-
     private final ClientMapper clientMapper;
+    private final BookMapper bookMapper;
 
-    public ClientService(ClientRepository clientRepository, BookRepository bookRepository, ClientMapper clientMapper) {
+    public ClientService(ClientRepository clientRepository, BookRepository bookRepository, ClientMapper clientMapper, BookMapper bookMapper) {
         this.clientRepository = clientRepository;
         this.bookRepository = bookRepository;
-
         this.clientMapper = clientMapper;
+        this.bookMapper = bookMapper;
     }
 
    @Transactional
@@ -46,10 +47,6 @@ public class ClientService {
         }
 
         Client client = clientMapper.toEntity(requestDTO);
-        if (client.getBooks() != null) {
-            client.getBooks().forEach(book -> book.setClient(client));
-        }
-
         Client savedClient = clientRepository.save(client);
         return clientMapper.toResponse(savedClient);
 
@@ -76,10 +73,10 @@ public class ClientService {
     public BookResponseDTO addBookToClient(String cpfNumber , BookRequestDTO bookDTO) {
         Cpf cpf = new Cpf(cpfNumber);
         Client client = clientRepository.findByCpf(cpf).orElseThrow(()-> new ClientNotFoundException("Cliente com CPF " + cpfNumber + " não encontrado"));
-        Book book = new Book(bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), client);
-        client.addBook(book);
+        Book book = bookMapper.toEntity(bookDTO);
+        book.setClient(client);
         Book savedBook = bookRepository.save(book);
-        return new BookResponseDTO(savedBook);
+        return bookMapper.toResponse(savedBook);
     }
 
     public ClientResponseDTO getClientByCpf(String cpfNumber) {
