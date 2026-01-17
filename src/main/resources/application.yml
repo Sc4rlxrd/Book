@@ -47,3 +47,21 @@ management:
       show-details: always
     prometheus:
       enabled: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: always
+
+logging:
+  level:
+    org.springdoc: TRACE
+    org.springframework.web: DEBUG
+    org.springframework.context: DEBUG
+

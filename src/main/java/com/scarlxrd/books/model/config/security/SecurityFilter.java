@@ -29,8 +29,20 @@ public class SecurityFilter extends OncePerRequestFilter {
     UserRepository userRepository;
     @Autowired
     RedisService redisService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        return path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/actuator");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+
         var token = this.recoverToken(request);
         if (token != null) {
             try {
