@@ -1,14 +1,38 @@
 package com.scarlxrd.books.model.DTO;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.List;
 import java.util.UUID;
-
+@Schema(
+        name = "ClientResponse",
+        description = "DTO de resposta com os dados completos do cliente"
+)
 public class ClientResponseDTO {
+    @Schema(
+            description = "Identificador único do cliente",
+            example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    )
     private UUID id;
+    @Schema(
+            description = "Nome do cliente",
+            example = "João"
+    )
     private String name;
+    @Schema(
+            description = "Sobrenome do cliente",
+            example = "Silva"
+    )
     private String lastName;
-    private String cpf; // Já formatado pelo @JsonValue no Cpf.java
-    private List<BookResponseDTO> books; // Lista de DTOs de livros
+    @Schema(
+            description = "CPF do cliente formatado",
+            example = "123.456.789-00"
+    )
+    private String cpf;
+    @Schema(
+            description = "Lista de livros cadastrados para o cliente"
+    )
+    private List<BookResponseDTO> books;
 
     public ClientResponseDTO() {
     }

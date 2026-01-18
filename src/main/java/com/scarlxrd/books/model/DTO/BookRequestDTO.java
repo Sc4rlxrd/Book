@@ -1,11 +1,29 @@
 package com.scarlxrd.books.model.DTO;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+
+@Schema(
+        name = "BookRequest",
+        description = "DTO para cadastro de um livro"
+)
 public class BookRequestDTO {
+    @Schema(
+            description = "Título do livro",
+            example = "Clean Code"
+    )
     @NotBlank(message = "is mandatory")
     private String title;
+    @Schema(
+            description = "Autor do livro",
+            example = "Robert C. Martin"
+    )
     @NotBlank(message = "is mandatory")
     private String author;
+    @Schema(
+            description = "ISBN do livro",
+            example = "9780132350884"
+    )
     @NotBlank(message = "is mandatory")
     private String isbn;
 

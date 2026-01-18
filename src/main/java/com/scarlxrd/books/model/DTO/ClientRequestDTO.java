@@ -1,22 +1,40 @@
 package com.scarlxrd.books.model.DTO;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
 
+@Schema(
+        name = "ClientRequest",
+        description = "DTO para criação de um cliente com seus livros favoritos"
+)
 public class ClientRequestDTO {
+
+    @Schema(
+            description = "Nome do cliente",
+            example = "João"
+    )
     @NotBlank(message = "is mandatory")
     private String name;
-
+    @Schema(
+            description = "Sobrenome do cliente",
+            example = "Silva"
+    )
     @NotBlank(message = "is mandatory")
     private String lastName;
-
+    @Schema(
+            description = "CPF do cliente (somente números ou formatado)",
+            example = "12345678900"
+    )
     @NotBlank(message = "is mandatory")
     private String cpfNumber;
-
-    @Valid // Valida cada item na lista de BookRequestDTO
-    private List<BookRequestDTO> books; // Lista de livros associados ao cliente
+    @Schema(
+            description = "Lista de livros favoritos do cliente"
+    )
+    @Valid
+    private List<BookRequestDTO> books;
 
     // Construtores, Getters e Setters
     public ClientRequestDTO() {}

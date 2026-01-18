@@ -1,13 +1,35 @@
 package com.scarlxrd.books.model.DTO;
 
 import com.scarlxrd.books.model.entity.Book;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
-
+@Schema(
+        name = "BookResponse",
+        description = "DTO de resposta com os dados do livro"
+)
 public class BookResponseDTO {
+    @Schema(
+            description = "Identificador único do livro",
+            example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    )
     private UUID id;
+    @Schema(
+            description = "Título do livro",
+            example = "Clean Code"
+    )
     private String title;
+
+    @Schema(
+            description = "Autor do livro",
+            example = "Robert C. Martin"
+    )
     private String author;
+
+    @Schema(
+            description = "ISBN do livro",
+            example = "9780132350884"
+    )
     private String isbn;
 
     public BookResponseDTO() {

@@ -2,6 +2,7 @@ package com.scarlxrd.books.model.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
@@ -16,8 +17,11 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Books API")
-                        .description("API de gerenciamento de cadastro de clientes com seus livros favoritos")
-                        .version("v1"))
+                        .description("API de gerenciamento de cadastro de clientes e seus livros favoritos")
+                        .version("v1")
+                        .contact(new Contact()
+                                .name("Scarlxrd")
+                                .email("contato@exemplo.com")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
