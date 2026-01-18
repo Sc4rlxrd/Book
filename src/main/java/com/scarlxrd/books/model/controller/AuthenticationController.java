@@ -6,6 +6,10 @@ import com.scarlxrd.books.model.config.security.TokenService;
 import com.scarlxrd.books.model.entity.Role;
 import com.scarlxrd.books.model.entity.User;
 import com.scarlxrd.books.model.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +25,7 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("auth")
+@Tag(name = "Authentication", description = "Autenticação e tokens")
 public class AuthenticationController {
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -31,6 +36,14 @@ public class AuthenticationController {
     @Autowired
     RedisService redisService;
 
+    @Operation(
+            summary = "Login",
+            description = "Autentica o usuário e retorna access token e refresh token",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Login realizado"),
+                    @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
+            }
+    )
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDto> login(@RequestBody @Valid AuthenticationDTO data){
         var auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(data.email(), data.password()));
@@ -45,6 +58,13 @@ public class AuthenticationController {
         return ResponseEntity.ok(new TokenResponseDto(accessToken,refreshToken));
     }
 
+    @Operation(
+            summary = "Registrar usuário",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Usuário registrado"),
+                    @ApiResponse(responseCode = "400", description = "Usuário já existe")
+            }
+    )
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterDTO data){
         if(this.repository.findByEmail(data.email()) != null) return ResponseEntity.badRequest().build();
@@ -57,6 +77,10 @@ public class AuthenticationController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(
+            summary = "Refresh token",
+            description = "Gera novos tokens usando refresh token"
+    )
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponseDto> refresh(@RequestBody @Valid RefreshRequestDto requestDto){
         var decoded = tokenService.decode(requestDto.refreshToken());
@@ -79,6 +103,11 @@ public class AuthenticationController {
         return ResponseEntity.ok(new TokenResponseDto(newAccessToken,newRefreshToken));
     }
 
+    @Operation(
+            summary = "Logout",
+            description = "Invalida o access token atual"
+    )
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader ){
         if(authHeader!= null && authHeader.startsWith("Bearer ")){

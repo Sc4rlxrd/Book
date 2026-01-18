@@ -2,6 +2,7 @@ package com.scarlxrd.books.model.controller;
 
 import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+@Tag(name = "Errors", description = "Modelo de erros da API")
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
