@@ -41,12 +41,12 @@ Serviço separado responsável por **consumir mensagens com falha da Dead Letter
 
 ## 🔒 Endpoints de Autenticação (`/auth`)
 
-| Método | Endpoint | Descrição | Corpo da Requisição | Resposta |
-|--------|-----------|------------|---------------------|-----------|
-| `POST` | `/auth/register` | Cria um novo usuário. | `{ "email": "...", "password": "..." }` | `200 OK` ou `400 Bad Request` |
-| `POST` | `/auth/login` | Realiza login e gera tokens JWT. | `{ "email": "...", "password": "..." }` | `200 OK` (Access + Refresh Tokens) |
-| `POST` | `/auth/refresh` | Gera novos tokens usando o refresh token. | `{ "refreshToken": "..." }` | `200 OK` ou `401 Unauthorized` |
-| `POST` | `/auth/logout` | Invalida o token atual no Redis. | Header: `Authorization: Bearer <token>` | `200 OK` |
+| Método | Endpoint         | Descrição                                 | Corpo da Requisição                     | Resposta                           |
+|--------|------------------|-------------------------------------------|-----------------------------------------|------------------------------------|
+| `POST` | `/auth/register` | Cria um novo usuário.                     | `{ "email": "...", "password": "..." }` | `200 OK` ou `400 Bad Request`      |
+| `POST` | `/auth/login`    | Realiza login e gera tokens JWT.          | `{ "email": "...", "password": "..." }` | `200 OK` (Access + Refresh Tokens) |
+| `POST` | `/auth/refresh`  | Gera novos tokens usando o refresh token. | `{ "refreshToken": "..." }`             | `200 OK` ou `401 Unauthorized`     |
+| `POST` | `/auth/logout`   | Invalida o token atual no Redis.          | Header: `Authorization: Bearer <token>` | `200 OK`                           |
 
 ---
 ## 👤 Endpoints de Clientes (`/v1/clients`)
@@ -58,11 +58,11 @@ As operações são **síncronas** e persistem os dados diretamente no **Postgre
 
 ---
 
-| Método | Endpoint | Descrição | Tipo de Operação |
-|--------|-----------|------------|------------------|
-| `POST` | `/v1/clients` | Cria um novo cliente e seus livros. | Síncrona |
-| `GET` | `/v1/clients` | Lista todos os clientes cadastrados com seus livros. | Síncrona |
-| `DELETE` | `/v1/clients/{cpf}` | Remove um cliente com base no CPF informado. | Síncrona |
+| Método   | Endpoint            | Descrição                                            | Tipo de Operação |
+|----------|---------------------|------------------------------------------------------|------------------|
+| `POST`   | `/v1/clients`       | Cria um novo cliente e seus livros.                  | Síncrona         |
+| `GET`    | `/v1/clients`       | Lista todos os clientes cadastrados com seus livros. | Síncrona         |
+| `DELETE` | `/v1/clients/{cpf}` | Remove um cliente com base no CPF informado.         | Síncrona         |
 
 ---
 
@@ -114,10 +114,10 @@ Cria um cliente e os seus livros associados.
 
 ### Códigos de Resposta Comuns
 
-| Código | Motivo |
-| :--- | :--- |
-| `400 Bad Request` | Dados inválidos (violação de validação) |
-| `409 Conflict` | Já existe um cliente com o CPF informado |
+| Código            | Motivo                                   |
+|:------------------|:-----------------------------------------|
+| `400 Bad Request` | Dados inválidos (violação de validação)  |
+| `409 Conflict`    | Já existe um cliente com o CPF informado |
 ---
 
 ### 📋 **GET** `/v1/clients`
@@ -166,8 +166,8 @@ DELETE /v1/clients/123.456.789-00
 
 ### Códigos de Resposta Comuns
 
-| Código | Motivo |
-| :--- | :--- |
+| Código          | Motivo                                   |
+|:----------------|:-----------------------------------------|
 | `404 Not Found` | Cliente com CPF informado não encontrado |
 
 
@@ -239,12 +239,58 @@ Cada mensagem armazenada segue o modelo:
 - **Mockito** para mocks e simulações.
 - **Testcontainers** (opcional) pode ser utilizado para testar RabbitMQ, PostgreSQL e Redis em ambiente isolado.
 
+## 📑 Documentação da API — Swagger / OpenAPI
+
+A API utiliza **Swagger (OpenAPI 3)** para documentação interativa de todos os endpoints disponíveis, permitindo:
+
+- Visualizar contratos de requisição e resposta
+- Executar chamadas HTTP diretamente pelo navegador
+- Validar payloads e códigos de resposta
+- Facilitar testes e integração com outros serviços
+
+### 🔗 Acesso à Interface Swagger
+
+Com a aplicação em execução, a documentação pode ser acessada em:
+
+``` text
+    http://localhost:8080/swagger-ui.html
+```
+
+### 🔐 Autenticação no Swagger
+
+Os endpoints protegidos exigem **JWT Bearer Token**.
+
+Para autenticar no Swagger:
+
+1. Realize login no endpoint `/auth/login`
+2. Copie o **Access Token** retornado
+3. Clique em **Authorize** no Swagger UI
+4. Informe o token no formato:
+
+``` text
+    Bearer <seu_token_jwt>
+```
+Após a autorização, todos os endpoints protegidos estarão disponíveis para teste diretamente pela interface.
+
+### 📘 Padrões Documentados
+
+A documentação Swagger inclui:
+
+- Descrição detalhada dos endpoints
+- Exemplos de payloads (`request` / `response`)
+- Códigos HTTP esperados
+- Mensagens de erro padronizadas (RFC 7807 — `ProblemDetail`)
+- Validações de entrada (`@Valid`, Bean Validation)
+
+Essa abordagem garante **clareza**, **padronização** e **facilidade de uso** da API tanto para desenvolvedores quanto para integrações externas.
+
+
 ## 📦 Repositórios
 
-| Serviço | Repositório | Descrição |
-|----------|--------------|------------|
-| **Book-Service** | [Book API](https://github.com/Sc4rlxrd/Book) | API principal para autenticação e gerenciamento de clientes/livros. |
-| **Book-DLQ-Service** | [Book DLQ Service](https://github.com/Sc4rlxrd/Book-DLQ-Service) | Serviço de consumo e persistência das mensagens da DLQ. |
+| Serviço              | Repositório                                                      | Descrição                                                           |
+|----------------------|------------------------------------------------------------------|---------------------------------------------------------------------|
+| **Book-Service**     | [Book API](https://github.com/Sc4rlxrd/Book)                     | API principal para autenticação e gerenciamento de clientes/livros. |
+| **Book-DLQ-Service** | [Book DLQ Service](https://github.com/Sc4rlxrd/Book-DLQ-Service) | Serviço de consumo e persistência das mensagens da DLQ.             |
 
 ---
 
