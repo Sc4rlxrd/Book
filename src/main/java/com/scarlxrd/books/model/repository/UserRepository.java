@@ -6,7 +6,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Repository;
 
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository

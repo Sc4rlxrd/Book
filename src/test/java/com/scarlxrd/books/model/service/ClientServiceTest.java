@@ -3,7 +3,6 @@ package com.scarlxrd.books.model.service;
 import com.scarlxrd.books.model.DTO.BookRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.DTO.ClientResponseDTO;
-import com.scarlxrd.books.model.config.rabbitmq.ClientProducer;
 import com.scarlxrd.books.model.entity.Book;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
@@ -196,9 +195,9 @@ class ClientServiceTest {
         bookRequestDTO.setAuthor("Andrew Hunt");
         bookRequestDTO.setIsbn("9780201616224");
 
-        Client client  = new Client(UUID.randomUUID(), "Guilherme","Silva", new Cpf(cpfNumber));
+        // Client client  = new Client(UUID.randomUUID(), "Guilherme","Silva", new Cpf(cpfNumber));
 
-        Book savedBook = new Book(bookRequestDTO.getTitle(), bookRequestDTO.getAuthor(), bookRequestDTO.getIsbn(), client);
+        // Book savedBook = new Book(bookRequestDTO.getTitle(), bookRequestDTO.getAuthor(), bookRequestDTO.getIsbn(), client);
 
         Assertions.assertThrows(ClientNotFoundException.class,() -> clientService.addBookToClient(cpfNumber, bookRequestDTO));
 
