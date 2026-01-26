@@ -5,6 +5,10 @@ services:
     ports:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - monitoring_net
   db_book:
     image: postgres:15
     container_name: db_book
@@ -52,6 +56,7 @@ volumes:
   redis_data:
   grafana_data:
   prometheus_data:
+  rabbitmq_data:
 
 networks:
   monitoring_net:
