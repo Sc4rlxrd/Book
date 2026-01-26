@@ -28,13 +28,14 @@ public class ClientRabbitService {
 
     public void process(ClientRequestDTO dto) {
         if(!CpfValidator.isValidCPF(dto.getCpfNumber())){
-            throw new BusinessException("Invalid CPF number");
+            throw new BusinessException("Invalid CPF number: " + dto.getCpfNumber());
         }
 
         Cpf cpf = new Cpf(dto.getCpfNumber());
 
         if(clientRepository.existsByCpf(cpf)){
-            throw new ClientAlreadyExistsException("Client already exists");
+            log.info("Idempotence: Client with CPF {} already exists in the database. Message ignored.", dto.getCpfNumber());
+            return;
         }
 
         try {
@@ -46,11 +47,12 @@ public class ClientRabbitService {
                 }
 
                 clientRepository.save(client);
+                log.info("Client {} successfully registered via messaging.", dto.getCpfNumber());
                 return null;
             });
 
-        }catch (BusinessException e){
-            log.error("An error occurred while processing the client.");
+        }catch (Exception e){
+            log.error("An error occurred while processing the client {}." , e.getMessage());
             throw e;
         }
 
