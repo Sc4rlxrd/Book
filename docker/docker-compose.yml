@@ -5,8 +5,10 @@ services:
     ports:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP
+      - "15692:15692"  # Prometheus Metrics
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./enabled_plugins:/etc/rabbitmq/enabled_plugins
     networks:
       - monitoring_net
   db_book:
@@ -51,6 +53,13 @@ services:
       monitoring_net:
     volumes:
       - grafana_data:/var/lib/grafana
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - monitoring_net
 volumes:
   db_book_volume:
   redis_data:

@@ -11,6 +11,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,10 +26,32 @@ public class ClientConsumer {
     private static final Logger log = LoggerFactory.getLogger(ClientConsumer.class);
     private final int MAX_RETRIES = 3;
 
-    public ClientConsumer(ClientRabbitService clientRabbitService, RabbitTemplate rabbitTemplate, Validator validator) {
+    private final Counter successCounter;
+    private final Counter retryCounter;
+    private final Counter dlqCounter;
+
+    public ClientConsumer(ClientRabbitService clientRabbitService, RabbitTemplate rabbitTemplate, Validator validator,MeterRegistry registry) {
         this.clientRabbitService = clientRabbitService;
         this.rabbitTemplate = rabbitTemplate;
         this.validator = validator;
+
+        this.successCounter = Counter.builder("rabbitmq_consumer_messages_total")
+                .description("Total de mensagens processadas com sucesso")
+                .tag("status", "success")
+                .tag("queue", RabbitMQConfig.QUEUE_NAME)
+                .register(registry);
+
+        this.retryCounter = Counter.builder("rabbitmq_consumer_messages_total")
+                .description("Total de mensagens enviadas para retry")
+                .tag("status", "retry")
+                .tag("queue", RabbitMQConfig.QUEUE_NAME)
+                .register(registry);
+
+        this.dlqCounter = Counter.builder("rabbitmq_consumer_messages_total")
+                .description("Total de mensagens enviadas para DLQ")
+                .tag("status", "dlq")
+                .tag("queue", RabbitMQConfig.QUEUE_NAME)
+                .register(registry);
 
     }
 
@@ -45,10 +69,13 @@ public class ClientConsumer {
         }
         try {
             clientRabbitService.process(clientRequestDTO);
+            successCounter.increment();
         }catch (BusinessException e) {
+            dlqCounter.increment();
             sendToDLQ(clientRequestDTO, message, e.getMessage());
         }
         catch (Exception e) {
+            retryCounter.increment();
             sendToRetry(clientRequestDTO, message);
         }
     }

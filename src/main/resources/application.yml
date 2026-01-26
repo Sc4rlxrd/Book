@@ -19,7 +19,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         generate_statistics: true
 
-
   redis:
     host: localhost
     port: 6379
@@ -41,13 +40,22 @@ management:
     enabled-by-default: false
     web:
       exposure:
-        include: 'health,prometheus'
+        include: 'health,prometheus,metrics'
   endpoint:
     health:
       enabled: true
       show-details: always
     prometheus:
       enabled: true
+    metrics:
+      enabled: true
+
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
 
 springdoc:
   api-docs:
@@ -61,6 +69,8 @@ server:
     include-stacktrace: always
 
 logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
   level:
     org.springdoc: TRACE
     org.springframework.web: DEBUG
