@@ -1,5 +1,6 @@
 package com.scarlxrd.books.model.config.rabbitmq;
 
+import jakarta.validation.constraints.Null;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +22,6 @@ public class RabbitMQConfig {
 
     // retry
     public static final String RETRY_QUEUE_NAME = "client.book.queue.retry";
-    public static final int RETRY_TTL = 10000; // 10s
 
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
@@ -67,7 +67,7 @@ public class RabbitMQConfig {
     @Bean
     public Queue retryQueue() {
         Map<String, Object> args = new HashMap<>();
-        args.put("x-message-ttl", RETRY_TTL);
+
         args.put("x-dead-letter-exchange", EXCHANGE);
         args.put("x-dead-letter-routing-key", ROUTING_KEY);
         return QueueBuilder.durable(RETRY_QUEUE_NAME).withArguments(args).build();

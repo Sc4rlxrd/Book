@@ -70,16 +70,23 @@ public class ClientConsumer {
 
         if (retryCount < MAX_RETRIES) {
             int nextRetry = retryCount + 1;
+            // CALCULO ex: 10s * (2 ^ retryCount)
+            // Tentativa 1: 10 * 1 = 10s
+            // Tentativa 2: 10 * 2 = 20s
+            // Tentativa 3: 10 * 4 = 40s
+            long baseDelay = 5000;
+            long delay = (long) (baseDelay*Math.pow(2,retryCount));
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EXCHANGE,
                     RabbitMQConfig.RETRY_QUEUE_NAME,
                     dto,
                     m -> {
                         m.getMessageProperties().setHeader("x-retry-count", nextRetry);
+                        m.getMessageProperties().setExpiration(String.valueOf(delay));
                         return m;
                     }
             );
-            log.warn("Retry {}/{} enviado para retry queue", nextRetry, MAX_RETRIES);
+            log.warn("Retry {}/{} enviado com delay de {}s", nextRetry, MAX_RETRIES,delay / 1000);
         } else {
             sendToDLQ(dto, message, "Máximo de retries atingido");
         }
