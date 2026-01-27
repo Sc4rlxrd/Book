@@ -1,0 +1,27 @@
+server:
+  http_listen_port: 9080
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Job para pegar logs dos containers (RabbitMQ, Postgres, etc)
+  - job_name: containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        target_label: 'container'
+
+  # Job para pegar o log da API
+  - job_name: api-book-service
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: api-book-service
+          container: api-book-service
+          __path__: /var/log/app/*.log

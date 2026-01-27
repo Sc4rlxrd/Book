@@ -60,6 +60,31 @@ services:
       - "9411:9411"
     networks:
       - monitoring_net
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring_net
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: promtail
+    user: "0:0" # Root no Linux
+    privileged: true
+    command: -config.file=/etc/promtail/config.yml
+    environment:
+      - DOCKER_API_VERSION=1.41
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      # Mapeie a pasta de logs da API aqui!
+      - ./logs:/var/log/app
+    networks:
+      - monitoring_net
 volumes:
   db_book_volume:
   redis_data:

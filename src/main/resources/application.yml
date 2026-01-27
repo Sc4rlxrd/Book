@@ -69,6 +69,8 @@ server:
     include-stacktrace: always
 
 logging:
+  file:
+    name: ./docker/logs/app.log
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
   level:

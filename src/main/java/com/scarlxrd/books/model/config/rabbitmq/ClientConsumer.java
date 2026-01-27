@@ -13,6 +13,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -63,7 +64,9 @@ public class ClientConsumer {
             String errorMsg = violations.stream()
                     .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                     .collect(Collectors.joining(", "));
-            log.warn("Validação falhou para ClientRequestDTO: {}", errorMsg);
+            log.warn("Validação falhou para ClientRequestDTO",
+                    kv("erros", errorMsg),
+                    kv("document", clientRequestDTO.getCpfNumber()));
             sendToDLQ(clientRequestDTO, message, errorMsg);
             return;
         }
@@ -88,7 +91,9 @@ public class ClientConsumer {
                     m.getMessageProperties().setHeader("x-reason", reason);
                     return m;
                 });
-        log.error("Mensagem movida para DLQ. Motivo: {}", reason);
+        log.error("Mensagem movida para DLQ",
+                kv("reason", reason),
+                kv("document", dto.getCpfNumber()));
     }
 
     private void sendToRetry(ClientRequestDTO dto, Message message) {
@@ -113,7 +118,10 @@ public class ClientConsumer {
                         return m;
                     }
             );
-            log.warn("Retry {}/{} enviado com delay de {}s", nextRetry, MAX_RETRIES,delay / 1000);
+            log.warn("Enviando mensagem para Retry",
+                    kv("retry_attempt", nextRetry),
+                    kv("max_retries", MAX_RETRIES),
+                    kv("delay_ms", delay));
         } else {
             sendToDLQ(dto, message, "Máximo de retries atingido");
         }

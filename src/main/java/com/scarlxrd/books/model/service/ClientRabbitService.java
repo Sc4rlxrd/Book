@@ -5,13 +5,13 @@ import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;
 import com.scarlxrd.books.model.entity.CpfValidator;
 import com.scarlxrd.books.model.exception.BusinessException;
-import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.mapper.ClientMapper;
 import com.scarlxrd.books.model.repository.ClientRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
 @Slf4j
 @Service
 public class ClientRabbitService {
@@ -34,7 +34,9 @@ public class ClientRabbitService {
         Cpf cpf = new Cpf(dto.getCpfNumber());
 
         if(clientRepository.existsByCpf(cpf)){
-            log.info("Idempotence: Client with CPF {} already exists in the database. Message ignored.", dto.getCpfNumber());
+            log.info("Idempotence: Client already exists",
+                    kv("cpf", dto.getCpfNumber()),
+                    kv("action","ignored"));
             return;
         }
 
@@ -47,12 +49,16 @@ public class ClientRabbitService {
                 }
 
                 clientRepository.save(client);
-                log.info("Client {} successfully registered via messaging.", dto.getCpfNumber());
+                log.info("Client successfully registered",
+                        kv("cpf", dto.getCpfNumber()),
+                        kv("event_type", "messaging_registration"));
                 return null;
             });
 
         }catch (Exception e){
-            log.error("An error occurred while processing the client {}." , e.getMessage());
+            log.error("Error processing client persistence",
+                    kv("error_message", e.getMessage()),
+                    kv("cpf", dto.getCpfNumber()));
             throw e;
         }
 

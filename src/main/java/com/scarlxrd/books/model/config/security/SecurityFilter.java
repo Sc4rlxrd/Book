@@ -6,19 +6,17 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-
 import org.springframework.security.core.context.SecurityContextHolder;
-
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Instant;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Slf4j
 @Component
@@ -51,7 +49,10 @@ public class SecurityFilter extends OncePerRequestFilter {
 
                 // verificar se não está na blackList
                 if (redisService.isBlackListed(jti)){
-                    log.warn("Token revogado detectado: jti={}", jti);
+                    log.warn("Token revoked detected",
+                            kv("jti", jti),
+                            kv("status", "denied"),
+                            kv("remote_ip", request.getRemoteAddr()));
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
@@ -59,7 +60,9 @@ public class SecurityFilter extends OncePerRequestFilter {
                 UserDetails user = userRepository.findByEmail(login);
                 var authentication = new UsernamePasswordAuthenticationToken(user,null, user.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("Usuário autenticado: {}", login);
+                log.info("Authenticated user",
+                        kv("user_email", login),
+                        kv("auth_method", "jwt"));
 
 //                if ("/auth/refresh".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
 //                    log.info("Refresh token usado: jti={}, user={}", jti, login);
@@ -74,7 +77,9 @@ public class SecurityFilter extends OncePerRequestFilter {
 //                    return;
 //                }
             } catch (Exception e) {
-                log.error("Falha na autenticação do token: {}", e.getMessage());
+                log.error("Token authentication failed.",
+                        kv("error", e.getMessage()),
+                        kv("request_uri", request.getRequestURI()));
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
