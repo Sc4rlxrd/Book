@@ -59,6 +59,10 @@ public class ClientConsumer {
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
     public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message) {
 
+        log.info("Mensagem recebida do RabbitMQ",
+                kv("document", clientRequestDTO.getCpfNumber()),
+                kv("queue", RabbitMQConfig.QUEUE_NAME));
+
         Set<ConstraintViolation<ClientRequestDTO>> violations = validator.validate(clientRequestDTO);
         if(!violations.isEmpty()) {
             String errorMsg = violations.stream()

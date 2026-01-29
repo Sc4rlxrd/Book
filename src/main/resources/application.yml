@@ -75,7 +75,7 @@ logging:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
   level:
     org.springdoc: TRACE
-    org.springframework.web: DEBUG
+    org.springframework.web: INFO
     org.springframework.context: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
