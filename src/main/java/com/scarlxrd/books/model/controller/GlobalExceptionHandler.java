@@ -2,6 +2,7 @@ package com.scarlxrd.books.model.controller;
 
 import com.scarlxrd.books.model.exception.ClientAlreadyExistsException;
 import com.scarlxrd.books.model.exception.ClientNotFoundException;
+import com.scarlxrd.books.model.exception.TooManyRequestsException;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -72,6 +73,15 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
         problem.setTitle("Forbidden");
         problem.setDetail("Você não tem permissão para acessar este recurso");
+        return problem;
+    }
+    // 429 - enviou muitas solicitações num curto período.
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ProblemDetail handleTooManyRequests(TooManyRequestsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.TOO_MANY_REQUESTS);
+        problem.setTitle("Too Many Requests");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("retry_after_seconds", ex.getSeconds());
         return problem;
     }
 

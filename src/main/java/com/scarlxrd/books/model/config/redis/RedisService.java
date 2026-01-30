@@ -76,4 +76,8 @@ public class RedisService {
         }
         return allowed;
     }
+
+    public Long getExpire(String key) {
+        return redisTemplate.getExpire("rl:" + key, TimeUnit.SECONDS);
+    }
 }
