@@ -57,4 +57,23 @@ public class RedisService {
         }
         return blocked;
     }
+
+    public boolean isAllowed(String key, int limit, long seconds) {
+        // Incrementa o contador para aquela chave (ex: "rl:login:127.0.0.1")
+        Long current = redisTemplate.opsForValue().increment("rl:" + key);
+
+        if (current != null && current == 1) {
+            // Se for a primeira vez, define o tempo de expiração
+            redisTemplate.expire("rl:" + key, seconds, TimeUnit.SECONDS);
+        }
+
+        boolean allowed = current != null && current <= limit;
+
+        if (!allowed) {
+            log.warn("Rate limit exceeded",
+                    kv("key", key),
+                    kv("action", "rate_limit_blocked"));
+        }
+        return allowed;
+    }
 }

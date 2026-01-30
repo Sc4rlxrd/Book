@@ -28,6 +28,9 @@ api:
       secret: ${JWT_SECRET:dd2e2add61a0cce0eb2bfb9c2d812515}
       access-expiration-hours: 1
       refresh-expiration-days: 7
+    rate-limit:
+      login-attempts: 5
+      login-timeout-seconds: 60
 
 app:
   admin:
