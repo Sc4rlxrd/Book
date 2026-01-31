@@ -5,6 +5,15 @@ spring:
     username: postgres
     password: root
     driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: BookAPI-HikariPool
+      maximum-pool-size: 12 #n(Threads * 1.5)
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 40000
+      max-lifetime: 1800000
+      keepalive-time: 60000
+
 
   flyway:
     enabled: true
@@ -12,7 +21,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update   # apenas valida/atualiza schema
+      ddl-auto: validate   # apenas valida/atualiza schema
 #    show-sql: true
     properties:
       hibernate:

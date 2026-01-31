@@ -15,7 +15,7 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class User implements UserDetails {
+public class User extends Auditable implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

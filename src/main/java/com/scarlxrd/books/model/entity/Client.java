@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "clients") // Nome da tabela no banco de dados
-public class Client {
+public class Client extends Auditable{
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
