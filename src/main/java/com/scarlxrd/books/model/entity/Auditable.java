@@ -34,4 +34,7 @@ public abstract class Auditable {
     @Version
     @Column(name = "version")
     private Long version;
+
+    @Column(name = "active", nullable = false)
+    private Boolean active = true;
 }

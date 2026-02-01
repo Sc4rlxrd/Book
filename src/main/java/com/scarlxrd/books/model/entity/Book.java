@@ -2,11 +2,15 @@ package com.scarlxrd.books.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.util.UUID;
 
 @Entity
 @Table(name = "books")
+@SQLDelete(sql = "UPDATE books SET active = false WHERE id = ? AND version = ?")
+@SQLRestriction("active = true")
 public class Book extends Auditable{
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

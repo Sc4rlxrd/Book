@@ -2,13 +2,18 @@ package com.scarlxrd.books.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.SoftDelete;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "clients") // Nome da tabela no banco de dados
+@Table(name = "clients")
+@SQLDelete(sql = "UPDATE clients SET active = false WHERE id = ? AND version = ?")
+@SQLRestriction("active = true")
 public class Client extends Auditable{
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
