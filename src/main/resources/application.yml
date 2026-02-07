@@ -93,4 +93,3 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.hibernate.stat: DEBUG
     org.hibernate.SQL_SLOW: INFO
-
