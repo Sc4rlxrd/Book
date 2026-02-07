@@ -21,7 +21,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate   # apenas valida/atualiza schema
+      ddl-auto: validate # apenas valida/atualiza schema
+      deferred-datasource-initialization: true
 #    show-sql: true
     properties:
       hibernate:
