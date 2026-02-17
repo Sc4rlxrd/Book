@@ -34,3 +34,4 @@ build/
 
 ### Pessoal ###
 /docker/logs
+/logs/app.log
