@@ -43,7 +43,9 @@ public class SecurityConfig {
         return httpSecurity
                 .securityMatcher("/actuator/**")
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize->authorize.anyRequest().authenticated())
+                .authorizeHttpRequests(authorize->authorize.requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .anyRequest().authenticated())
                 .userDetailsService(monitoringUserDetailsService)
                 .httpBasic(withDefaults())
                 .build();
