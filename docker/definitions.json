@@ -1,0 +1,96 @@
+{
+  "vhosts": [
+    { "name": "/" }
+  ],
+  "users": [
+    {
+      "name": "book_user",
+      "password": "book_password",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "book_user",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "minha-exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "minha-exchange.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "client.book.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "minha-exchange.dlx",
+        "x-dead-letter-routing-key": "minha-routing-key.dlq"
+      }
+    },
+    {
+      "name": "client.book.queue.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "minha-exchange",
+        "x-dead-letter-routing-key": "minha-routing-key"
+      }
+    },
+    {
+      "name": "client.book.queue.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "minha-exchange",
+      "vhost": "/",
+      "destination": "client.book.queue",
+      "destination_type": "queue",
+      "routing_key": "minha-routing-key",
+      "arguments": {}
+    },
+    {
+      "source": "minha-exchange",
+      "vhost": "/",
+      "destination": "client.book.queue.retry",
+      "destination_type": "queue",
+      "routing_key": "client.book.queue.retry",
+      "arguments": {}
+    },
+    {
+      "source": "minha-exchange.dlx",
+      "vhost": "/",
+      "destination": "client.book.queue.dlq",
+      "destination_type": "queue",
+      "routing_key": "minha-routing-key.dlq",
+      "arguments": {}
+    }
+  ]
+}

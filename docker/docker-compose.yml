@@ -6,9 +6,15 @@ services:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP
       - "15692:15692"  # Prometheus Metrics
+    environment:
+      RABBITMQ_DEFAULT_USER: book_user
+      RABBITMQ_DEFAULT_PASS: book_password
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: >
+        -rabbitmq_management load_definitions "/etc/rabbitmq/definitions.json"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./enabled_plugins:/etc/rabbitmq/enabled_plugins
+      - ./definitions.json:/etc/rabbitmq/definitions.json
     networks:
       - monitoring_net
   db_book:
