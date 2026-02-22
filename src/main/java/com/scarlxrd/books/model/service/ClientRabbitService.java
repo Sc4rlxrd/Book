@@ -8,6 +8,7 @@ import com.scarlxrd.books.model.exception.BusinessException;
 import com.scarlxrd.books.model.mapper.ClientMapper;
 import com.scarlxrd.books.model.repository.ClientRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -31,15 +32,6 @@ public class ClientRabbitService {
             throw new BusinessException("Invalid CPF number: " + dto.getCpfNumber());
         }
 
-        Cpf cpf = new Cpf(dto.getCpfNumber());
-
-        if(clientRepository.existsByCpf(cpf)){
-            log.info("Idempotence: Client already exists",
-                    kv("cpf", dto.getCpfNumber()),
-                    kv("action","ignored"));
-            return;
-        }
-
         try {
             transactionTemplate.execute(status ->  {
                 Client client = clientMapper.toEntity(dto);
@@ -55,7 +47,13 @@ public class ClientRabbitService {
                 return null;
             });
 
-        }catch (Exception e){
+        } catch (DataIntegrityViolationException e) {
+            log.info("Idempotent duplicate event ignored",
+                    kv("cpf", dto.getCpfNumber()),
+                    kv("reason", "unique_constraint_violation"));
+        }
+
+        catch (Exception e){
             log.error("Error processing client persistence",
                     kv("error_message", e.getMessage()),
                     kv("cpf", dto.getCpfNumber()));

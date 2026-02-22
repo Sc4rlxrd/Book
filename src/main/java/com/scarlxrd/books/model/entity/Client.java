@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "clients")
+@Table(name = "clients",
+       uniqueConstraints = {  @UniqueConstraint(name = "uk_clients_cpf", columnNames = "cpf_number")}
+)
 @SQLDelete(sql = "UPDATE clients SET active = false WHERE id = ? AND version = ?")
 @SQLRestriction("active = true")
 public class Client extends Auditable{
@@ -24,13 +26,13 @@ public class Client extends Auditable{
     private Cpf cpf;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JsonManagedReference // Usado para evitar ‘loop’ infinito na serialização JSON
-    private List<Book> books = new ArrayList<>(); // Inicialize para evitar NullPointerException
+    @JsonManagedReference
+    private List<Book> books = new ArrayList<>();
 
-    // Construtor padrão (sem argumentos) é OBRIGATÓRIO para entidades JPA
+
     public Client() {}
 
-    // Construtor para criar um cliente
+
     public Client(UUID id, String name, String lastName, Cpf cpf) {
         this.id = id;
         this.name = name;

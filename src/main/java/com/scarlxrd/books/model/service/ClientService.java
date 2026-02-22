@@ -16,6 +16,7 @@ import com.scarlxrd.books.model.mapper.ClientMapper;
 import com.scarlxrd.books.model.repository.BookRepository;
 import com.scarlxrd.books.model.repository.ClientRepository;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,15 +42,13 @@ public class ClientService {
 
    @Transactional
     public ClientResponseDTO createClient(ClientRequestDTO requestDTO) {
-        Cpf cpf = new Cpf(requestDTO.getCpfNumber());
-        if (clientRepository.existsByCpf(cpf)) {
-            throw new ClientAlreadyExistsException("Já existe um cliente cadastrado com este CPF: " + cpf);
+        try {
+            Client client = clientMapper.toEntity(requestDTO);
+            Client savedClient = clientRepository.save(client);
+            return clientMapper.toResponse(savedClient);
+        } catch (DataIntegrityViolationException e) {
+            throw new ClientAlreadyExistsException("Já existe um cliente cadastrado com este CPF: " + requestDTO.getCpfNumber());
         }
-
-        Client client = clientMapper.toEntity(requestDTO);
-        Client savedClient = clientRepository.save(client);
-        return clientMapper.toResponse(savedClient);
-
     }
 
     @Transactional(readOnly = true)
