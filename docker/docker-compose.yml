@@ -23,6 +23,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
+      POSTGRES_DB: bookdb
     ports:
       - "5433:5432"
     volumes:
