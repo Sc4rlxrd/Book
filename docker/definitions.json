@@ -20,22 +20,16 @@
   ],
   "exchanges": [
     {
-      "name": "minha-exchange",
+      "name": "book.events",
       "vhost": "/",
-      "type": "direct",
-      "durable": true,
-      "auto_delete": false,
-      "internal": false,
-      "arguments": {}
+      "type": "topic",
+      "durable": true
     },
     {
-      "name": "minha-exchange.dlx",
+      "name": "book.events.dlx",
       "vhost": "/",
-      "type": "direct",
-      "durable": true,
-      "auto_delete": false,
-      "internal": false,
-      "arguments": {}
+      "type": "topic",
+      "durable": true
     }
   ],
   "queues": [
@@ -43,54 +37,47 @@
       "name": "client.book.queue",
       "vhost": "/",
       "durable": true,
-      "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "minha-exchange.dlx",
-        "x-dead-letter-routing-key": "minha-routing-key.dlq"
+        "x-dead-letter-exchange": "book.events.dlx",
+        "x-dead-letter-routing-key": "client.created.dlq"
       }
     },
     {
       "name": "client.book.queue.retry",
       "vhost": "/",
       "durable": true,
-      "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "minha-exchange",
-        "x-dead-letter-routing-key": "minha-routing-key"
+        "x-dead-letter-exchange": "book.events",
+        "x-dead-letter-routing-key": "client.created"
       }
     },
     {
       "name": "client.book.queue.dlq",
       "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
+      "durable": true
     }
   ],
   "bindings": [
     {
-      "source": "minha-exchange",
+      "source": "book.events",
       "vhost": "/",
       "destination": "client.book.queue",
       "destination_type": "queue",
-      "routing_key": "minha-routing-key",
-      "arguments": {}
+      "routing_key": "client.created"
     },
     {
-      "source": "minha-exchange",
+      "source": "book.events",
       "vhost": "/",
       "destination": "client.book.queue.retry",
       "destination_type": "queue",
-      "routing_key": "client.book.queue.retry",
-      "arguments": {}
+      "routing_key": "client.retry"
     },
     {
-      "source": "minha-exchange.dlx",
+      "source": "book.events.dlx",
       "vhost": "/",
       "destination": "client.book.queue.dlq",
       "destination_type": "queue",
-      "routing_key": "minha-routing-key.dlq",
-      "arguments": {}
+      "routing_key": "client.created.dlq"
     }
   ]
 }

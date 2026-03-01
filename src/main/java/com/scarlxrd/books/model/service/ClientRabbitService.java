@@ -48,9 +48,12 @@ public class ClientRabbitService {
             });
 
         } catch (DataIntegrityViolationException e) {
-            log.info("Idempotent duplicate event ignored",
-                    kv("cpf", dto.getCpfNumber()),
-                    kv("reason", "unique_constraint_violation"));
+            if (e.getMostSpecificCause().getMessage().contains("cpf_number")) {
+                log.info("Idempotent duplicate event ignored",
+                        kv("cpf", dto.getCpfNumber()),
+                        kv("reason", "unique_constraint_violation"));
+            }
+
         }
 
         catch (Exception e){

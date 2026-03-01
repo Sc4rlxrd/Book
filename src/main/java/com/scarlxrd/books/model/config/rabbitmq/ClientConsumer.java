@@ -61,6 +61,11 @@ public class ClientConsumer {
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
     public void receiveMessage(ClientRequestDTO clientRequestDTO, Message message) {
 
+        if(clientRequestDTO == null){
+            sendToDLQ(null, message, "Payload nulo");
+            return;
+        }
+
         log.info("Mensagem recebida do RabbitMQ",
                 kv("document", clientRequestDTO.getCpfNumber()),
                 kv("queue", RabbitMQConfig.QUEUE_NAME));
@@ -90,16 +95,20 @@ public class ClientConsumer {
     }
 
     private void sendToDLQ(ClientRequestDTO dto, Message message, String reason) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.DLX_EXCHANGE,
+        String cpf = dto != null ? dto.getCpfNumber() : "unknown";
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.DLX_EXCHANGE,
                 RabbitMQConfig.DLQ_ROUTING_KEY,
                 dto,
                 m ->{
                     m.getMessageProperties().setHeader("x-reason", reason);
                     return m;
                 });
+
         log.error("Mensagem movida para DLQ",
                 kv("reason", reason),
-                kv("document", dto.getCpfNumber()));
+                kv("document", cpf));
     }
 
     private void sendToRetry(ClientRequestDTO dto, Message message) {

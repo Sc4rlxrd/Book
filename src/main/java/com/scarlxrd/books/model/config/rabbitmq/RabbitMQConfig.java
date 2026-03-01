@@ -13,14 +13,16 @@ import java.util.Map;
 
 @Configuration
 public class RabbitMQConfig {
+
     public static final String QUEUE_NAME = "client.book.queue";
-    public static final String EXCHANGE = "minha-exchange";
-    public static final String ROUTING_KEY = "minha-routing-key";
+
+    public static final String EXCHANGE = "book.events";
+    public static final String ROUTING_KEY = "client.created";
 
     // dlq
     public static final String DLQ_NAME = "client.book.queue.dlq";
-    public static final String DLX_EXCHANGE = "minha-exchange.dlx";
-    public static final String DLQ_ROUTING_KEY = "minha-routing-key.dlq";
+    public static final String DLX_EXCHANGE = "book.events.dlx";
+    public static final String DLQ_ROUTING_KEY = "client.created.dlq";
 
     // retry
     public static final String RETRY_QUEUE_NAME = "client.book.queue.retry";
@@ -29,7 +31,6 @@ public class RabbitMQConfig {
     public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
-
 
     @Bean
     public Queue mainQueue() {
@@ -40,62 +41,80 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public DirectExchange exchange() {
-        return new DirectExchange(EXCHANGE);
+    public TopicExchange exchange() {
+        return new TopicExchange(EXCHANGE);
     }
 
     @Bean
-    public Binding mainBinding(Queue mainQueue, DirectExchange exchange) {
-        return BindingBuilder.bind(mainQueue).to(exchange).with(ROUTING_KEY);
+    public Binding mainBinding(Queue mainQueue, TopicExchange exchange) {
+        return BindingBuilder
+                .bind(mainQueue)
+                .to(exchange)
+                .with(ROUTING_KEY);
     }
 
-    //dlq
+    // DLQ
     @Bean
     public Queue deadLetterQueue() {
         return QueueBuilder.durable(DLQ_NAME).build();
     }
 
     @Bean
-    public DirectExchange deadLetterExchange() {
-        return new DirectExchange(DLX_EXCHANGE);
+    public TopicExchange deadLetterExchange() {
+        return new TopicExchange(DLX_EXCHANGE);
     }
 
     @Bean
-    public Binding dlqBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange) {
-        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with(DLQ_ROUTING_KEY);
+    public Binding dlqBinding(Queue deadLetterQueue, TopicExchange deadLetterExchange) {
+        return BindingBuilder
+                .bind(deadLetterQueue)
+                .to(deadLetterExchange)
+                .with(DLQ_ROUTING_KEY);
     }
 
-    // Retry Queue -> TTL + volta para fila principal
+    // Retry
     @Bean
     public Queue retryQueue() {
+
         Map<String, Object> args = new HashMap<>();
 
         args.put("x-dead-letter-exchange", EXCHANGE);
         args.put("x-dead-letter-routing-key", ROUTING_KEY);
-        return QueueBuilder.durable(RETRY_QUEUE_NAME).withArguments(args).build();
+
+        return QueueBuilder
+                .durable(RETRY_QUEUE_NAME)
+                .withArguments(args)
+                .build();
     }
 
     @Bean
-    public Binding retryBinding(Queue retryQueue, DirectExchange exchange) {
-        return BindingBuilder.bind(retryQueue).to(exchange).with(RETRY_QUEUE_NAME);
+    public Binding retryBinding(Queue retryQueue, TopicExchange exchange) {
+        return BindingBuilder
+                .bind(retryQueue)
+                .to(exchange)
+                .with(RETRY_QUEUE_NAME);
     }
 
-    // Isso garante que o RabbitTemplate coloque o TraceId no Header ao enviar
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+
         rabbitTemplate.setMessageConverter(messageConverter());
         rabbitTemplate.setObservationEnabled(true);
+
         return rabbitTemplate;
     }
 
-    // Isso garante que o @RabbitListener extraia o TraceId ao receber
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter());
         factory.setObservationEnabled(true);
+
         return factory;
     }
 
