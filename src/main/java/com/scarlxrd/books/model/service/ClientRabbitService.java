@@ -1,5 +1,6 @@
 package com.scarlxrd.books.model.service;
 
+import com.scarlxrd.books.model.DTO.ClientCreatedEvent;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.entity.Client;
 import com.scarlxrd.books.model.entity.Cpf;

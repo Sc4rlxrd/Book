@@ -27,72 +27,13 @@ public class RabbitMQConfig {
     // retry
     public static final String RETRY_QUEUE_NAME = "client.book.queue.retry";
 
+    public static final String EVENTS_EXCHANGE = "book.events";
+
+    public static final String CLIENT_CREATED_ROUTING_KEY = "client.created";
+
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
-    }
-
-    @Bean
-    public Queue mainQueue() {
-        return QueueBuilder.durable(QUEUE_NAME)
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", DLQ_ROUTING_KEY)
-                .build();
-    }
-
-    @Bean
-    public TopicExchange exchange() {
-        return new TopicExchange(EXCHANGE);
-    }
-
-    @Bean
-    public Binding mainBinding(Queue mainQueue, TopicExchange exchange) {
-        return BindingBuilder
-                .bind(mainQueue)
-                .to(exchange)
-                .with(ROUTING_KEY);
-    }
-
-    // DLQ
-    @Bean
-    public Queue deadLetterQueue() {
-        return QueueBuilder.durable(DLQ_NAME).build();
-    }
-
-    @Bean
-    public TopicExchange deadLetterExchange() {
-        return new TopicExchange(DLX_EXCHANGE);
-    }
-
-    @Bean
-    public Binding dlqBinding(Queue deadLetterQueue, TopicExchange deadLetterExchange) {
-        return BindingBuilder
-                .bind(deadLetterQueue)
-                .to(deadLetterExchange)
-                .with(DLQ_ROUTING_KEY);
-    }
-
-    // Retry
-    @Bean
-    public Queue retryQueue() {
-
-        Map<String, Object> args = new HashMap<>();
-
-        args.put("x-dead-letter-exchange", EXCHANGE);
-        args.put("x-dead-letter-routing-key", ROUTING_KEY);
-
-        return QueueBuilder
-                .durable(RETRY_QUEUE_NAME)
-                .withArguments(args)
-                .build();
-    }
-
-    @Bean
-    public Binding retryBinding(Queue retryQueue, TopicExchange exchange) {
-        return BindingBuilder
-                .bind(retryQueue)
-                .to(exchange)
-                .with(RETRY_QUEUE_NAME);
     }
 
     @Bean

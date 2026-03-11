@@ -1,5 +1,6 @@
 package com.scarlxrd.books.model.config.rabbitmq;
 
+import com.scarlxrd.books.model.DTO.ClientCreatedEvent;
 import com.scarlxrd.books.model.DTO.ClientRequestDTO;
 import com.scarlxrd.books.model.exception.BusinessException;
 import com.scarlxrd.books.model.service.ClientRabbitService;
@@ -84,6 +85,7 @@ public class ClientConsumer {
         try {
             clientRabbitService.process(clientRequestDTO);
             successCounter.increment();
+            publishClientCreatedEvent(clientRequestDTO);
         }catch (BusinessException e) {
             dlqCounter.increment();
             sendToDLQ(clientRequestDTO, message, e.getMessage());
@@ -124,8 +126,8 @@ public class ClientConsumer {
             long baseDelay = 5000;
             long delay = (long) (baseDelay*Math.pow(2,retryCount));
             rabbitTemplate.convertAndSend(
-                    RabbitMQConfig.EXCHANGE,
-                    RabbitMQConfig.RETRY_QUEUE_NAME,
+                    RabbitMQConfig.EVENTS_EXCHANGE,
+                    "client.retry",
                     dto,
                     m -> {
                         m.getMessageProperties().setHeader("x-retry-count", nextRetry);
@@ -140,5 +142,22 @@ public class ClientConsumer {
         } else {
             sendToDLQ(dto, message, "Máximo de retries atingido");
         }
+    }
+
+    private void publishClientCreatedEvent(ClientRequestDTO dto){
+
+        ClientCreatedEvent event = new ClientCreatedEvent();
+        event.setEventType("CLIENT_CREATED");
+        event.setCpf(dto.getCpfNumber());
+        event.setName(dto.getName());
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EVENTS_EXCHANGE,
+                RabbitMQConfig.CLIENT_CREATED_ROUTING_KEY,
+                event
+        );
+        log.info("Evento publicado",
+                kv("event", "CLIENT_CREATED"),
+                kv("cpf", dto.getCpfNumber()));
     }
 }
