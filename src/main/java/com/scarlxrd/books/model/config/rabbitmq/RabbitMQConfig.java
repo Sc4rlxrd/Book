@@ -26,10 +26,13 @@ public class RabbitMQConfig {
 
     // retry
     public static final String RETRY_QUEUE_NAME = "client.book.queue.retry";
+    public static final String CLIENT_RETRY_ROUTING_KEY = "client.retry";
 
     public static final String EVENTS_EXCHANGE = "book.events";
 
     public static final String CLIENT_CREATED_ROUTING_KEY = "client.created";
+
+    public static final String CLIENT_CREATED_NOTIFY_ROUTING_KEY = "client.created.notify";
 
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {

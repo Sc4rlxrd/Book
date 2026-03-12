@@ -127,7 +127,7 @@ public class ClientConsumer {
             long delay = (long) (baseDelay*Math.pow(2,retryCount));
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EVENTS_EXCHANGE,
-                    "client.retry",
+                    RabbitMQConfig.CLIENT_RETRY_ROUTING_KEY,
                     dto,
                     m -> {
                         m.getMessageProperties().setHeader("x-retry-count", nextRetry);
@@ -143,7 +143,6 @@ public class ClientConsumer {
             sendToDLQ(dto, message, "Máximo de retries atingido");
         }
     }
-
     private void publishClientCreatedEvent(ClientRequestDTO dto){
 
         ClientCreatedEvent event = new ClientCreatedEvent();
@@ -156,8 +155,16 @@ public class ClientConsumer {
                 RabbitMQConfig.CLIENT_CREATED_ROUTING_KEY,
                 event
         );
-        log.info("Evento publicado",
-                kv("event", "CLIENT_CREATED"),
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EVENTS_EXCHANGE,
+                RabbitMQConfig.CLIENT_CREATED_NOTIFY_ROUTING_KEY,
+                event
+        );
+
+        log.info("Eventos publicados",
+                kv("event_internal", "client.created"),
+                kv("event_notification", "client.created.notify"),
                 kv("cpf", dto.getCpfNumber()));
     }
 }

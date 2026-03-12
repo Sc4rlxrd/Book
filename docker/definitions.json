@@ -56,7 +56,6 @@
       "vhost": "/",
       "durable": true
     },
-
     {
       "name": "notification.client.created.queue",
       "vhost": "/",
@@ -85,13 +84,12 @@
       "destination_type": "queue",
       "routing_key": "client.created.dlq"
     },
-
     {
       "source": "book.events",
       "vhost": "/",
       "destination": "notification.client.created.queue",
       "destination_type": "queue",
-      "routing_key": "client.created"
+      "routing_key": "client.created.notify"
     }
   ]
 }
